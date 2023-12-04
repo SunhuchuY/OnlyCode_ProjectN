@@ -62,9 +62,9 @@ public class UIManager : MonoBehaviour
     public BigInteger gold { get; internal set; } = 0;
     public BigInteger bloodStone { get; internal set; } = 0;
 
-    int goldRand_Start = 0, goldRand_End = 5;
+    private int goldRand_Start = 0, goldRand_End = 5;
 
-    bool istempsoulFragment = false, istempgold  = false, istempbloodStone = false;
+    private bool istempsoulFragment = false, istempgold  = false, istempbloodStone = false;
 
 
 
@@ -149,8 +149,8 @@ public class UIManager : MonoBehaviour
         currentExp += _EXP;
         SetBloodStone(_bloodStone);
 
-        GameManager.accuireBoxManager.Appear_AccuireBox(BoxEnum.exp, _EXP);
-        GameManager.accuireBoxManager.Appear_AccuireBox(BoxEnum.bloodStone, _bloodStone);
+        GameManager.Instance.accuireBoxManager.Appear_AccuireBox(BoxEnum.exp, _EXP);
+        GameManager.Instance.accuireBoxManager.Appear_AccuireBox(BoxEnum.bloodStone, _bloodStone);
 
         switch (_monsterType)
         {
@@ -159,7 +159,7 @@ public class UIManager : MonoBehaviour
                 {
                     // gold 는 특별드랍
                     SetGold(_gold);
-                    GameManager.accuireBoxManager.Appear_AccuireBox(BoxEnum.gold, _gold);
+                    GameManager.Instance.accuireBoxManager.Appear_AccuireBox(BoxEnum.gold, _gold);
                 }
                 break;
             case monsterType.Unique:

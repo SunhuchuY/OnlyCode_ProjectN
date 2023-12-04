@@ -89,4 +89,41 @@ public enum BoxEnum
     soulFragment,
     exp
 }
+public enum cardType
+{
+    spawner,
+    attack,
+    debuff,
+    attackPercent,
+    spawnerPercent,
+    shield,
+    onlyPercent,
+    targetNum,
+    seconds,
+    percentOfSecond
+}
 
+public enum MultiplyOrPlus
+{
+    plus,
+    multyply
+}
+
+public enum HealMonsterType
+{
+    hpPercent
+}
+
+public enum DropAnim
+{
+    Basic
+}
+
+[System.Serializable]
+public enum type
+{
+    player,
+    playerSKill,
+    tower,
+    sequencs
+}

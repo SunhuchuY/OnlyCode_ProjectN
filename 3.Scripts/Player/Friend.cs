@@ -17,7 +17,7 @@ public class Friend : MonoBehaviour
 
     public float attackAmount = 30f;
 
-    Animator animator;
+    private Animator animator;
 
     bool isStop = false;
     public bool isExeption = false;
@@ -97,7 +97,7 @@ public class Friend : MonoBehaviour
         }
         else
         {
-            searchObj = GameManager.bulletController.RandMonster();
+            searchObj = GameManager.Instance.bulletController.RandMonster();
         }
 
 
@@ -115,9 +115,11 @@ public class Friend : MonoBehaviour
 
     public void GetDamage(float Damage)
     {
+        if (Damage < 0)
+            Damage = 1;
+
         currentHealth -= Damage;
-        OnAnimator(isSuffer);
-        GameManager.appearTextManager.AppearText((int)Damage, transform);
+        GameManager.Instance.appearTextManager.AppearText((int)Damage, transform);
     }
 
     private void OnTriggerStay2D(Collider2D collision)

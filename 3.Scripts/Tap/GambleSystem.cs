@@ -114,7 +114,8 @@ public class GambleSystem : MonoBehaviour
                 cardScript.cardIndex = GetRandomCardIndex(cardRateEnum.SSR);
             }
 
-            GameManager.skillTreeManager.CurCardStates[cardScript.cardIndex].numOfCard++;
+            Debug.Log($"{cardScript.cardIndex},,, {GameManager.Instance.skillTreeManager.CurCardStates.Length}");
+            GameManager.Instance.skillTreeManager.CurCardStates[cardScript.cardIndex].numOfCard++;
         }
 
         StartCoroutine(ShowStart_Coroutine(maxRate));

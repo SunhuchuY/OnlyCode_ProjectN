@@ -230,13 +230,13 @@ public class Player : MonoBehaviour
             sum = (int)((attack + per_attack) + ((attack + per_attack) * (attackAmplify_Percent / 100)));
         }       
 
-        return sum * GameManager.uIManager.level;
+        return sum * GameManager.Instance.uIManager.level;
     }
 
     public float sumRange() { return attackRankge + per_range; }
     public float sumCounter() { return counterAttack_Damage + per_counter; }
     public double sumMaxhp() { return maxHealth + per_maxhp; }
-    public float sumSpeed() { return GameManager.bulletController.GetCoolTime() + per_speed; }
+    public float sumSpeed() { return GameManager.Instance.bulletController.GetCoolTime() + per_speed; }
 
     public int sumCriticalAttack() { return (int)(sumAttack() + ( sumAttack() * (criticalAddDamagePercent / 100) ) - defenseAmount); }
 
@@ -252,14 +252,14 @@ public class Player : MonoBehaviour
     void Start()
     {
         animator = GetComponent<Animator>();
-        _initRange_X = GameManager.bulletController.transform.localScale.x;
-        _initRange_Y = GameManager.bulletController.transform.localScale.y;
+        _initRange_X = GameManager.Instance.bulletController.transform.localScale.x;
+        _initRange_Y = GameManager.Instance.bulletController.transform.localScale.y;
         playerScale = transform.localScale.x;
 
         // Initialize the HP bar
         currentHealth = maxHealth;
         curManaRate = 0;
-        GameManager.bulletController.gameObject.transform.localScale = new UnityEngine.Vector2(initRange_X, initRange_Y);
+        GameManager.Instance.bulletController.gameObject.transform.localScale = new UnityEngine.Vector2(initRange_X, initRange_Y);
         originalHpBarColor = hpBarImage.color;
 
         criticalPercent = Mathf.Clamp(criticalPercent, 1f, 100f);
@@ -285,7 +285,7 @@ public class Player : MonoBehaviour
         if(currentHealth <= 0 && !isDead)
         {
             StatePlayer(PlayerStateEnum.Dead);
-            GameManager.statisticScreen.RestartBigStage();
+            GameManager.Instance.statisticScreen.RestartBigStage();
         }
     }
 
@@ -395,7 +395,7 @@ public class Player : MonoBehaviour
 
     private void Shoot() // animator event
     {
-        GameManager.bulletController.Shoot();
+        GameManager.Instance.bulletController.Shoot();
     }
 
     public void StatePlayer(PlayerStateEnum playerState)
@@ -406,13 +406,13 @@ public class Player : MonoBehaviour
                 AllAnimationOff();
                 isDead = true;
                 animator.SetBool("isDead", true);
-                GameManager.monsterControll.Getlist_MonsterParent().gameObject.SetActive(false);
+                GameManager.Instance.monsterControll.Getlist_MonsterParent().gameObject.SetActive(false);
                 break;
             case PlayerStateEnum.Attack:
-                if (GameManager.bulletController.GetTarget() == null)
+                if (GameManager.Instance.bulletController.GetTarget() == null)
                     return;
 
-                var direction = transform.position.x - GameManager.bulletController.GetTarget().position.x;
+                var direction = transform.position.x - GameManager.Instance.bulletController.GetTarget().position.x;
 
                 if(direction >= 0 ) // 몬스터가 플레이어 보다 왼쪽에 있는 경우
                     transform.localScale = new Vector3(-1* playerScale, playerScale, playerScale);
@@ -422,7 +422,7 @@ public class Player : MonoBehaviour
 
                 AllAnimationOff();
                 animator.SetBool("isAttack", true);
-                animator.speed = GameManager.bulletController.animationSpeed;
+                animator.speed = GameManager.Instance.bulletController.animationSpeed;
                 break;
 
             case PlayerStateEnum.Restart:
@@ -430,7 +430,7 @@ public class Player : MonoBehaviour
                 isDead = false;
                 currentHealth = maxHealth;
                 animator.SetBool("isDead", false);
-                GameManager.monsterControll.Getlist_MonsterParent().gameObject.SetActive(true);
+                GameManager.Instance.monsterControll.Getlist_MonsterParent().gameObject.SetActive(true);
                 break;
         }
     }

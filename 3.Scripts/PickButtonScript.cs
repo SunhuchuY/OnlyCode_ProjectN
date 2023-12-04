@@ -28,9 +28,9 @@ public class PickButtonScript : MonoBehaviour
         PointerEventData pointerData = data as PointerEventData;
         GameObject selectediconObj = pointerData.pointerPress;
 
-        GameManager.skillTreeManager.pickbutton_Obj = gameObject;
-
-        GameManager.skillTreeManager.OnInventory();
+        GameManager.Instance.skillTreeManager.pickbutton_Obj = gameObject;
+            
+        GameManager.Instance.skillTreeManager.OnInventory();
 
 
     }
@@ -38,15 +38,15 @@ public class PickButtonScript : MonoBehaviour
     public void PickButton()
     {
 
-        if (GameManager.skillTreeManager.isUse)
+        if (GameManager.Instance.skillTreeManager.isUse)
         {
-            skillpickNum = GameManager.skillTreeManager.tempPickIndex;
-            GameManager.skillTreeManager.isUse = false;
+            skillpickNum = GameManager.Instance.skillTreeManager.tempPickIndex;
+            GameManager.Instance.skillTreeManager.isUse = false;
             return;
         }
 
 
-        GameManager.skillTreeManager.OnInventory();
+        GameManager.Instance.skillTreeManager.OnInventory();
 
 
     }
@@ -57,10 +57,10 @@ public class PickButtonScript : MonoBehaviour
         if (skillpickNum < 0)
             return;
 
-        rateText.text = $"{GameManager.skillTreeManager.cardDatas[skillpickNum].cardCost}";
-        roundImage.sprite = GameManager.skillTreeManager.roundSprite[(int)GameManager.skillTreeManager.cardDatas[skillpickNum].cardRate];
-        iconImage.sprite = GameManager.skillTreeManager.cardDatas[skillpickNum].cardSprite;
-        GameManager.skillTreeManager.CurCardStates[skillpickNum].isHaveCard = true;
+        rateText.text = $"{GameManager.Instance.skillTreeManager.cardDatas[skillpickNum].cardCost}";
+        roundImage.sprite = GameManager.Instance.skillTreeManager.roundSprite[(int)GameManager.Instance.skillTreeManager.cardDatas[skillpickNum].cardRate];
+        iconImage.sprite = GameManager.Instance.skillTreeManager.cardDatas[skillpickNum].cardSprite;
+        GameManager.Instance.skillTreeManager.CurCardStates[skillpickNum].isHaveCard = true;
 
         usingCardObject.SetActive(true);
         emptyCardObject.SetActive(false);

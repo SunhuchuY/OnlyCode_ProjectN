@@ -8,11 +8,11 @@ public class AttackTap : MonoBehaviour
 {
 
 
-    float upAttackAmount = 20f; // 공격력 증가량
+    private float upAttackAmount = 20f; // 공격력 증가량
 
-    Dictionary<AttackTapEnum, BigInteger[]> reqAttackTapDictionary = new Dictionary<AttackTapEnum, BigInteger[]>();
+    private Dictionary<AttackTapEnum, BigInteger[]> reqAttackTapDictionary = new Dictionary<AttackTapEnum, BigInteger[]>();
 
-    float restrictedCoolTime = 0.3f; // 이 이하로 쿨타임 다운 불가능
+    private float restrictedCoolTime = 0.3f; // 이 이하로 쿨타임 다운 불가능
 
     // 현재 능력치 텍스트
     [SerializeField]
@@ -163,11 +163,11 @@ public class AttackTap : MonoBehaviour
         reqcriticalPercent_Text.text = $"{ToCurrencyString(reqAttackTapDictionary[AttackTapEnum.criticalPercent][0])}";
         reqcriticalAddString_Text.text = $"{ToCurrencyString(reqAttackTapDictionary[AttackTapEnum.CriticalAddDamagePercent][0])}";
 
-        upAttack_Text.text = $"{ToCurrencyString( GameManager.playerScript.sumAttack())}";
-        upAttackSpeed_Text.text = $"{ToCurrencyString(Mathf.Floor(GameManager.playerScript.sumSpeed() * 100) / 100)}";
-        upAttackRange_Text.text = $"{ToCurrencyString( GameManager.playerScript.sumRange())}";
-        upcriticalPercentText.text = $"{ToCurrencyString(GameManager.playerScript.GetCriticalPercent())} %";
-        upcriticalAddDamage_Text.text = $"{ToCurrencyString(GameManager.playerScript.GetCriticalAddDamage())} %";
+        upAttack_Text.text = $"{ToCurrencyString( GameManager.Instance.playerScript.sumAttack())}";
+        upAttackSpeed_Text.text = $"{ToCurrencyString(Mathf.Floor(GameManager.Instance.playerScript.sumSpeed() * 100) / 100)}";
+        upAttackRange_Text.text = $"{ToCurrencyString( GameManager.Instance.playerScript.sumRange())}";
+        upcriticalPercentText.text = $"{ToCurrencyString(GameManager.Instance.playerScript.GetCriticalPercent())} %";
+        upcriticalAddDamage_Text.text = $"{ToCurrencyString(GameManager.Instance.playerScript.GetCriticalAddDamage())} %";
     }
 
     public void UpAttack()
@@ -207,28 +207,28 @@ public class AttackTap : MonoBehaviour
         switch (attackTapEnum)
         {
             case AttackTapEnum.attack:
-                level = GameManager.playerScript.attackLevel;
+                level = GameManager.Instance.playerScript.attackLevel;
                 break;
             case AttackTapEnum.attackRange:
-                level = GameManager.playerScript.attackRankgeLevel;
+                level = GameManager.Instance.playerScript.attackRankgeLevel;
                 break;
             case AttackTapEnum.attackSpeed: 
-                level = GameManager.playerScript.attackSpeedLevel;
+                level = GameManager.Instance.playerScript.attackSpeedLevel;
                 break;
             case AttackTapEnum.criticalPercent:
-                level = GameManager.playerScript.criticalPercentLevel;
+                level = GameManager.Instance.playerScript.criticalPercentLevel;
                 break;
             case AttackTapEnum.CriticalAddDamagePercent:
-                level = GameManager.playerScript.criticalAddDamagePercentLevel;
+                level = GameManager.Instance.playerScript.criticalAddDamagePercentLevel;
                 break;
         }
+
+        var requiredBloodStone = reqAttackTapDictionary[attackTapEnum][level - 1];
 
         if (level >= reqAttackTapDictionary[attackTapEnum].Length)
             return;
 
-        var requiredBloodStone = reqAttackTapDictionary[attackTapEnum][level - 1];
-
-        if (GameManager.uIManager.GetBloodStone() < requiredBloodStone)
+        if (GameManager.Instance.uIManager.GetBloodStone() < requiredBloodStone)
             return; // 구매조건 불충족
 
         if (reqAttackTapDictionary[attackTapEnum].Length <= level)
@@ -242,71 +242,71 @@ public class AttackTap : MonoBehaviour
 
                 // text setting
                 reqAttack_Text.text = $"{ToCurrencyString(nextrequiredBloodStone)}";
-                upAttack_Text.text = $"{ToCurrencyString(GameManager.playerScript.sumAttack())}";
+                upAttack_Text.text = $"{ToCurrencyString(GameManager.Instance.playerScript.sumAttack())}";
 
                 // system setting
-                GameManager.playerScript.attack += upAttackAmount;
-                GameManager.playerScript.attackLevel++;
+                GameManager.Instance.playerScript.attack += upAttackAmount;
+                GameManager.Instance.playerScript.attackLevel++;
 
                 break;
             case AttackTapEnum.attackRange:
                 // text setting
                 reqAttackRange_Text.text = $"{ToCurrencyString(nextrequiredBloodStone)}";
-                upAttackRange_Text.text = ToCurrencyString(GameManager.playerScript.sumRange());
+                upAttackRange_Text.text = ToCurrencyString(GameManager.Instance.playerScript.sumRange());
 
                 // system setting
-                GameManager.playerScript.attackRankgeLevel++;
-                GameManager.playerScript.attackRankge++;
-                float up = (GameManager.playerScript.sumRange() - 1) * GameManager.playerScript.upRange;
+                GameManager.Instance.playerScript.attackRankgeLevel++;
+                GameManager.Instance.playerScript.attackRankge++;
+                float up = (GameManager.Instance.playerScript.sumRange() - 1) * GameManager.Instance.playerScript.upRange;
 
-                GameManager.bulletController.gameObject.transform.localScale = new UnityEngine.Vector2(
-                    GameManager.playerScript.initRange_X + up,
-                    GameManager.playerScript.initRange_Y + up
+                GameManager.Instance.bulletController.gameObject.transform.localScale = new UnityEngine.Vector2(
+                    GameManager.Instance.playerScript.initRange_X + up,
+                    GameManager.Instance.playerScript.initRange_Y + up
                     );
 
                 break;
             case AttackTapEnum.attackSpeed:
                 // text setting
                 reqAttackSpeed_Text.text = $"{ToCurrencyString(nextrequiredBloodStone)}";
-                upAttackSpeed_Text.text = $"{ToCurrencyString(Mathf.Floor(GameManager.playerScript.sumSpeed() * 100) / 100)}";
+                upAttackSpeed_Text.text = $"{ToCurrencyString(Mathf.Floor(GameManager.Instance.playerScript.sumSpeed() * 100) / 100)}";
 
                 // system setting
-                GameManager.bulletController.SetCoolTime(-0.05f);
-                GameManager.playerScript.attackSpeedLevel++;
+                GameManager.Instance.bulletController.SetCoolTime(-0.05f);
+                GameManager.Instance.playerScript.attackSpeedLevel++;
 
                 break;
             case AttackTapEnum.criticalPercent:
                 // text setting
                 reqcriticalPercent_Text.text = $"{ToCurrencyString(nextrequiredBloodStone)}";
-                upcriticalPercentText.text = $"{ToCurrencyString(Mathf.Floor(GameManager.playerScript.GetCriticalPercent() * 100) / 100)}";
+                upcriticalPercentText.text = $"{ToCurrencyString(Mathf.Floor(GameManager.Instance.playerScript.GetCriticalPercent() * 100) / 100)}";
 
                 // system setting
-                GameManager.playerScript.SetCriticalAddDamage(1);
-                GameManager.playerScript.criticalPercentLevel++;
+                GameManager.Instance.playerScript.SetCriticalAddDamage(1);
+                GameManager.Instance.playerScript.criticalPercentLevel++;
 
                 break;
             case AttackTapEnum.CriticalAddDamagePercent:
                 //text setting
-                upcriticalAddDamage_Text.text = $"{ToCurrencyString(GameManager.playerScript.GetCriticalAddDamage())} %";
+                upcriticalAddDamage_Text.text = $"{ToCurrencyString(GameManager.Instance.playerScript.GetCriticalAddDamage())} %";
                 reqcriticalAddString_Text.text = $"{ToCurrencyString(nextrequiredBloodStone)}";
 
                 // system setting
-                GameManager.playerScript.SetCriticalAddDamage(1);
-                GameManager.playerScript.criticalAddDamagePercentLevel++;
+                GameManager.Instance.playerScript.SetCriticalAddDamage(1);
+                GameManager.Instance.playerScript.criticalAddDamagePercentLevel++;
 
                 break;
         }
 
-        GameManager.uIManager.SetBloodStone(-1 * requiredBloodStone);
+        GameManager.Instance.uIManager.SetBloodStone(-1 * requiredBloodStone);
         isPress = true;
     }
 
     readonly float isPressStartTime = 2f;
     readonly float delayTime = 0.1f;
-    float curStartTIme = 0;
-    float curDealyTime = 0;
-    bool isPress = false;
-    AttackTapEnum inputStr;
+    private float curStartTIme = 0;
+    private float curDealyTime = 0;
+    private bool isPress = false;
+    private AttackTapEnum inputStr;
 
 
     public void IsPressFalse()

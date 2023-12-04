@@ -7,13 +7,12 @@ using DG.Tweening;
 
 public class CounterAttack : MonoBehaviour
 {
-    SpriteRenderer spriteRenderer;
-    float originalAlpha;
+    private SpriteRenderer spriteRenderer;
+    private List<Monster> monsters = new List<Monster>();
 
-    float maxFade = 0.6f, minFade = 0.2f, durationFade = 1f;
-    float coolTime = 3f, curTime = 0;
+    private float maxFade = 0.6f, minFade = 0.2f, durationFade = 1f;
+    private float coolTime = 3f, curTime = 0;
 
-    List<Monster> monsters = new List<Monster>();
 
     private void Start()
     {
@@ -33,11 +32,10 @@ public class CounterAttack : MonoBehaviour
 
             for (int i = 0; i < monsters.Count; i++)
             {
-                monsters[i].GetDamage((int)GameManager.playerScript.sumCounter());
-                monsters[i].CounterAttack_Suffer();
+                monsters[i].GetDamage((int)GameManager.Instance.playerScript.sumCounter());
             }
 
-            GameManager.particleManager.PlayParticle(transform, transform, 1, durationFade);
+            GameManager.Instance.particleManager.PlayParticle(transform, transform, 1, durationFade);
 
             curTime = 0;
         }

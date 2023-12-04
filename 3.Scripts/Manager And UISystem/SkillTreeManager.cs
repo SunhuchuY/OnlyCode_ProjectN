@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using TMPro;
 using Unity.VisualScripting;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -11,46 +12,49 @@ using UnityEngine.UI;
 
 public class SkillTreeManager : MonoBehaviour
 {
-    const int Count = 4;
-    const int pickCount = 12; 
-    public int GetpickCount() { return pickCount; }
 
-    [SerializeField] Transform cardContents_Inventory;
-    public Transform pickbutton_Parent;
-
-    public CardData[] cardDatas; // 전체
+    readonly private int Count = 4;
+    readonly private int pickCount = 12; 
 
 
     [HideInInspector] public CurCardState[] CurCardStates;
-
     [HideInInspector] public List<GameObject> pickbutton_ObjList = new List<GameObject>();
-
     [HideInInspector] public GameObject pickbutton_Obj;
-
     [HideInInspector] public int tempPickIndex= -1;
-
-    private bool isClick = false;
     [HideInInspector] public bool isUse = false;
+    [SerializeField] private GameObject inventoryObject, cardPrefab , pickSKillBoxObject;
+    [SerializeField] private ScrollRect scrollRect;
+    [SerializeField] private Color notBuyColor, ableBuyColor;
+    [SerializeField] private Image BuyBox;
+    [SerializeField] private Transform cardContents_Inventory;
 
-    GameObject selectediconObj , selectedpickbutton_Obj;
-
-    [SerializeField] GameObject inventoryObject, cardPrefab , pickSKillBoxObject;
-
-    [SerializeField] ScrollRect scrollRect;
-
-    [SerializeField] Color notBuyColor, ableBuyColor;
-
-    [SerializeField] Image BuyBox;
+    private CardDataContainer cardDataContainer;
+    private GameObject selectediconObj , selectedpickbutton_Obj;
 
     public Sprite empryIconSprite;
-
     public Sprite[] roundSprite = new Sprite[3];
+    public Transform pickbutton_Parent;
+    public CardData[] cardDatas { get; private set; } = new CardData[20]; // 전체
 
-    [Tooltip("This is InventoryInspector")] [SerializeField] InventoryInspector inventoryInspector;
+    public int GetpickCount() { return pickCount; }
 
-    bool isPossibleBuy;
+    [Tooltip("This is InventoryInspector")] 
+    [SerializeField] private InventoryInspector inventoryInspector;
 
-    int tempCurCardLevel = 0;
+    private bool isClick = false;
+    private bool isPossibleBuy;
+
+    private int tempCurCardLevel = 0;
+
+    private void Awake()
+    {
+        cardDataContainer = AssetDatabase.LoadAssetAtPath<CardDataContainer>("Assets/8.WindowEditor/CardDataContainer.asset");
+
+        for (int i = 0; i < cardDataContainer.cards.Length; i++)
+        {
+            cardDatas[i] = cardDataContainer.cards[i];
+        }
+    }
 
     private void Start()
     {
@@ -83,7 +87,7 @@ public class SkillTreeManager : MonoBehaviour
         for (int k = 0; k < 4; k++)
         {
             pickbutton_Parent.GetChild(k).GetComponent<PickButtonScript>().skillpickNum = k;
-            GameManager.skillTreeManager.CurCardStates[k].numOfCard++;
+            GameManager.Instance.skillTreeManager.CurCardStates[k].numOfCard++;
         }
     }
 
@@ -147,7 +151,7 @@ public class SkillTreeManager : MonoBehaviour
         inventoryInspector.cardNeedOfCurText.text = CurCardStates[tempPickIndex].numOfCard.ToString();
         inventoryInspector.cardNeedOfFullText.text = $"/{cardDatas[tempPickIndex].GetcardUpgreadeForNeedCardAmount(cardLevel)}";
 
-        if (GameManager.uIManager.GetGold() < cardDatas[tempPickIndex].GetcardUpgreadeForNeedMoney(cardLevel))
+        if (GameManager.Instance.uIManager.GetGold() < cardDatas[tempPickIndex].GetcardUpgreadeForNeedMoney(cardLevel))
         {
             inventoryInspector.curGoldAmountText.color = Color.red;
             isPossibleBuy = false;
@@ -157,7 +161,7 @@ public class SkillTreeManager : MonoBehaviour
             inventoryInspector.curGoldAmountText.color = Color.blue;
         }
 
-        inventoryInspector.curGoldAmountText.text = GameManager.uIManager.GetGold().ToString();
+        inventoryInspector.curGoldAmountText.text = GameManager.Instance.uIManager.GetGold().ToString();
 
         if (isPossibleBuy)
         {
@@ -230,7 +234,7 @@ public class SkillTreeManager : MonoBehaviour
         }
         else // 구매 가능
         {
-            GameManager.uIManager.SetGold(-cardDatas[tempPickIndex].GetcardUpgreadeForNeedMoney(tempCurCardLevel));
+            GameManager.Instance.uIManager.SetGold(-cardDatas[tempPickIndex].GetcardUpgreadeForNeedMoney(tempCurCardLevel));
             CurCardStates[tempPickIndex].numOfCard -= cardDatas[tempPickIndex].GetcardUpgreadeForNeedCardAmount(tempCurCardLevel);
 
             CurCardStates[tempPickIndex].cardLevel++;

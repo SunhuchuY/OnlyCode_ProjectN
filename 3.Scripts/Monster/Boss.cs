@@ -1,12 +1,12 @@
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class Boss : MonoBehaviour
 {
-
-    bool firstStart = true;
-    Monster monster;
+    private bool firstStart = true;
+    private Monster monster;
 
     private void Start()
     {
@@ -18,12 +18,12 @@ public class Boss : MonoBehaviour
         if (firstStart == true)
             return;
 
-        if (monster.currentHealth > 0)
+        if (monster.Health.CurrentValue > 0)
             return;
 
-        GameManager.monsterControll.BossExit();
-        GameManager.monsterControll.curWaveLev++;
-        GameManager.monsterControll.BigWaveSet();
+        GameManager.Instance.monsterControll.BossExit();
+        GameManager.Instance.monsterControll.curWaveLev++;
+        GameManager.Instance.monsterControll.BigWaveSet();
         
         firstStart = false;
     }

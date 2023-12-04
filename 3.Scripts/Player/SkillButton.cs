@@ -21,9 +21,6 @@ public class SkillButton : MonoBehaviour
     }
 
     public int btnNum = 0;
-
-    Vector2 originalPickPosition;
-
     public bool isDrag = false;
 
     [SerializeField] public Image iconImage, roundImage;
@@ -32,8 +29,8 @@ public class SkillButton : MonoBehaviour
     public void BeginDrag()
     {
         isDrag = false;
-        GameManager.skillManager.pickBtn_Num = btnNum;
-        GameManager.skillManager.pickSkill_Num = pickSkillNum;
+        GameManager.Instance.skillManager.pickBtn_Num = btnNum;
+        GameManager.Instance.skillManager.pickSkill_Num = pickSkillNum;
     }
 
     private void CardSetting()
@@ -41,13 +38,13 @@ public class SkillButton : MonoBehaviour
         if (pickSkillNum < 0)
         {
             rateText.text = $"";
-            iconImage.sprite = GameManager.skillTreeManager.empryIconSprite;
+            iconImage.sprite = GameManager.Instance.skillTreeManager.empryIconSprite;
             return;
         }
 
-        rateText.text = $"{GameManager.skillTreeManager.cardDatas[pickSkillNum].cardCost}";
-        roundImage.sprite = GameManager.skillTreeManager.roundSprite[(int)GameManager.skillTreeManager.cardDatas[pickSkillNum].cardRate];
-        iconImage.sprite = GameManager.skillTreeManager.cardDatas[pickSkillNum].cardSprite;
+        rateText.text = $"{GameManager.Instance.skillTreeManager.cardDatas[pickSkillNum].cardCost}";
+        roundImage.sprite = GameManager.Instance.skillTreeManager.roundSprite[(int)GameManager.Instance.skillTreeManager.cardDatas[pickSkillNum].cardRate];
+        iconImage.sprite = GameManager.Instance.skillTreeManager.cardDatas[pickSkillNum].cardSprite;
 
     }
 }

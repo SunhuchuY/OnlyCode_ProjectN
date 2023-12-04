@@ -8,8 +8,8 @@ public class FirstAttackMonster : MonoBehaviour
     private Monster this_monster;
 
     [HideInInspector] public int firstAttack_Mount { get; internal set; }
-
     [HideInInspector] public bool isAlreadyFirstAttack { get; internal set; } = false;
+
 
     [SerializeField] private float multyplyAttackAmount = 1;    
 

@@ -8,6 +8,7 @@ public class ArrowScript : MonoBehaviour
     [HideInInspector] public int damage = 70;
 
     public bool isShield = false;
+    private int shieldAmount = 0;
 
     private void OnEnable()
     {
@@ -24,20 +25,20 @@ public class ArrowScript : MonoBehaviour
     {
         if (collision.CompareTag("Shield"))
         {
+            shieldAmount = collision.GetComponent<Shield>().shieldAmount;
             isShield = true;
-            Destroy(gameObject);
         }
 
     }
 
     private void OnTriggerStay2D(Collider2D collision)
     {
-        if (collision.CompareTag("Player") && !isShield)
+        if (collision.CompareTag("Player") )
         {
             if (collision.GetComponent<Player>() != null)
-                GameManager.playerScript.GetDamage(damage);
+                GameManager.Instance.playerScript.GetDamage(damage - shieldAmount);
             else if (collision.GetComponent<Friend>() != null)
-                collision.GetComponent<Friend>().GetDamage(damage);
+                collision.GetComponent<Friend>().GetDamage(damage - shieldAmount);
 
             Destroy(gameObject);
 

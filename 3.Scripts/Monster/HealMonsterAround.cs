@@ -3,32 +3,28 @@ using System.Collections.Generic;
 using UnityEngine;
 using DG.Tweening;
 using Unity.VisualScripting;
+using System.Numerics;
 
-public class mon10ScriptAssist : MonoBehaviour
+public class HealMonsterAround : MonoBehaviour
 {
-    //  positioned component script of heal range gameobject
+    [SerializeField] private ParticleSystem particleSystem;
 
-    [SerializeField] ParticleSystem particleSystem;
-
-    List<Monster> healMonsters = new List<Monster>();
-
-    [SerializeField] int healAmount = 30;
-    const float effectDuration = 2f;
+    private List<Monster> healMonsters = new List<Monster>();
+    readonly private float effectDuration = 2f;
 
     public void OnEnable()
     {
         healMonsters.Clear();
     }
 
-    public void healRange()
+    public void healRange(float healAmount)
     {
         for (int i = 0; i < healMonsters.Count; i++)
         {
-            healMonsters[i].currentHealth += healAmount;
+            healMonsters[i].Health.ApplyModifier((int)healAmount);
         }
 
         StartCoroutine(healOff());
-
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
@@ -47,8 +43,11 @@ public class mon10ScriptAssist : MonoBehaviour
         }
     }
 
-    IEnumerator healOff()
+    private IEnumerator healOff()
     {
+        if (particleSystem == null)
+            yield break;
+
         particleSystem.Play();
         yield return new WaitForSeconds(effectDuration);
         particleSystem.Stop();

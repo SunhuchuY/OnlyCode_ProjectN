@@ -6,14 +6,14 @@ using UnityEngine;
 
 public class BulletController : MonoBehaviour
 {
-    Transform target;
+    private Transform target;
     public Transform GetTarget() { return target; }
     public void SetTarget(Transform _target) { target = _target.transform; }
 
-    public GameObject bulletPrefab; // ¹ß»çÇÒ ÃÑ¾Ë ÇÁ¸®ÆÕ
-    private Transform firePoint; // ÃÑ¾Ë ¹ß»ç À§Ä¡
+    public GameObject bulletPrefab; // ë°œì‚¬í•  ì´ì•Œ í”„ë¦¬íŒ¹
+    private Transform firePoint; // ì´ì•Œ ë°œì‚¬ ìœ„ì¹˜
 
-    private const float bulletSpeed = 5f; // ÃÑ¾Ë ÀÌµ¿ ¼Óµµ
+    private const float bulletSpeed = 5f; // ì´ì•Œ ì´ë™ ì†ë„
     private const float _animationInitSpeed = 1;
     private const float InitcoolTime = 2.5f;
     public float animationSpeed
@@ -21,7 +21,7 @@ public class BulletController : MonoBehaviour
         get { return _animationInitSpeed + (InitcoolTime - coolTime); } 
     }
 
-    private float coolTime = InitcoolTime, coolTimeLevel = 1f , curTime; // ÃÑ¾Ë ¹ß»ç½Ã°£°£°İ
+    private float coolTime = InitcoolTime, coolTimeLevel = 1f , curTime; // ì´ì•Œ ë°œì‚¬ì‹œê°„ê°„ê²©
 
     public void SetCoolTime(float input) { coolTime += input;}
     public float GetCoolTime() { return coolTime; }
@@ -35,7 +35,7 @@ public class BulletController : MonoBehaviour
 
     private void Start()
     {
-        firePoint = GameManager.player.transform;
+        firePoint = GameManager.Instance.player.transform;
         curTime = coolTime;
     }
 
@@ -44,25 +44,25 @@ public class BulletController : MonoBehaviour
         curTime += Time.deltaTime;
     }
 
-    public void Shoot() // ½¸
+    public void Shoot() // ìŠ›
     {
             GameObject bullet = Instantiate(bulletPrefab, firePoint.position, Quaternion.identity);
 
             Vector3 targetPosition = target.GetComponent<PositionData>().AimPosition.position;
 
-            // ÃÑ¾ËÀÇ ¹æÇâÀ» ¼³Á¤ÇÕ´Ï´Ù.
+            // ì´ì•Œì˜ ë°©í–¥ì„ ì„¤ì •í•©ë‹ˆë‹¤.
             Vector2 bulletDirection = (targetPosition - firePoint.position).normalized;
 
-            // °¢µµ °è»êÀ» À§ÇØ ¹æÇâ º¤ÅÍ¸¦ °¢µµ·Î º¯È¯ÇÕ´Ï´Ù.
+            // ê°ë„ ê³„ì‚°ì„ ìœ„í•´ ë°©í–¥ ë²¡í„°ë¥¼ ê°ë„ë¡œ ë³€í™˜í•©ë‹ˆë‹¤.
             float angle = Mathf.Atan2(bulletDirection.y, bulletDirection.x) * Mathf.Rad2Deg;
 
-            // ÃÑ¾ËÀÇ È¸ÀüÀ» ¼³Á¤ÇÕ´Ï´Ù.
+            // ì´ì•Œì˜ íšŒì „ì„ ì„¤ì •í•©ë‹ˆë‹¤.
             bullet.transform.rotation = Quaternion.Euler(new Vector3(0, 0, angle));
 
-            // Rigidbody2D ÄÄÆ÷³ÍÆ®¸¦ °¡Á®¿É´Ï´Ù.
+            // Rigidbody2D ì»´í¬ë„ŒíŠ¸ë¥¼ ê°€ì ¸ì˜µë‹ˆë‹¤.
             Rigidbody2D rb = bullet.GetComponent<Rigidbody2D>();
 
-            // ¹ß»ç ¹æÇâÀ¸·Î ÃÑ¾ËÀ» ÀÌµ¿½ÃÅµ´Ï´Ù.
+            // ë°œì‚¬ ë°©í–¥ìœ¼ë¡œ ì´ì•Œì„ ì´ë™ì‹œí‚µë‹ˆë‹¤.
             rb.velocity = bulletDirection * bulletSpeed;
 
             curTime = 0f;
@@ -80,14 +80,14 @@ public class BulletController : MonoBehaviour
     {
         if (collision.CompareTag("Monster") && (target == null || !target.gameObject.activeSelf))
         {
-            // Å¸°ÙÀÌ ¾øÀ»¶§
+            // íƒ€ê²Ÿì´ ì—†ì„ë•Œ
             target = collision.transform; 
         }
         else if (collision.CompareTag("Monster") && target != null)
         {
-            // Å¸°ÙÀÌ ÀÖÀ»¶§
-            if(curTime > coolTime && !GameManager.isGameStop)
-                GameManager.playerScript.StatePlayer(PlayerStateEnum.Attack);
+            // íƒ€ê²Ÿì´ ìˆì„ë•Œ
+            if(curTime > coolTime && !GameManager.Instance.isGameStop)
+                GameManager.Instance.playerScript.StatePlayer(PlayerStateEnum.Attack);
         }
 
     }
@@ -117,36 +117,38 @@ public class BulletController : MonoBehaviour
         }
     }
 
-    public void SequenceShot(int shotNum, float intervalTime)
+    public void SequenceShot(int shotNum, float intervalTime,  int attackAmount)
     {
-        StartCoroutine(SequenceShot_Coroutine(shotNum, intervalTime));
+        StartCoroutine(SequenceShot_Coroutine(shotNum, intervalTime, attackAmount));
     }
 
-    IEnumerator SequenceShot_Coroutine(int _shotNum, float _intervalTime)
+    private IEnumerator SequenceShot_Coroutine(int _shotNum, float _intervalTime, int _attackAmount)
     {
         for (int i = 0; i < _shotNum; i++)
         {
             while (RandMonster() == null)
             {
-                // RandMonster()°¡ nullÀÏ µ¿¾È ±â´Ù¸²
+                // RandMonster()ê°€ nullì¼ ë™ì•ˆ ê¸°ë‹¤ë¦¼
                 yield return null;
             }
 
             GameObject bullet = Instantiate(bulletPrefab, firePoint.position, Quaternion.identity);
 
-            // ÃÑ¾ËÀÇ ¹æÇâÀ» ¼³Á¤ÇÕ´Ï´Ù.
+            bullet.GetComponent<Bullet>().exptionAttackAmount = _attackAmount;
+
+            // ì´ì•Œì˜ ë°©í–¥ì„ ì„¤ì •í•©ë‹ˆë‹¤.
             Vector2 bulletDirection = (RandMonster().transform.position - firePoint.position).normalized;
 
-            // °¢µµ °è»êÀ» À§ÇØ ¹æÇâ º¤ÅÍ¸¦ °¢µµ·Î º¯È¯ÇÕ´Ï´Ù.
+            // ê°ë„ ê³„ì‚°ì„ ìœ„í•´ ë°©í–¥ ë²¡í„°ë¥¼ ê°ë„ë¡œ ë³€í™˜í•©ë‹ˆë‹¤.
             float angle = Mathf.Atan2(bulletDirection.y, bulletDirection.x) * Mathf.Rad2Deg;
 
-            // ÃÑ¾ËÀÇ È¸ÀüÀ» ¼³Á¤ÇÕ´Ï´Ù.
+            // ì´ì•Œì˜ íšŒì „ì„ ì„¤ì •í•©ë‹ˆë‹¤.
             bullet.transform.rotation = Quaternion.Euler(new Vector3(0, 0, angle));
 
-            // Rigidbody2D ÄÄÆ÷³ÍÆ®¸¦ °¡Á®¿É´Ï´Ù.
+            // Rigidbody2D ì»´í¬ë„ŒíŠ¸ë¥¼ ê°€ì ¸ì˜µë‹ˆë‹¤.
             Rigidbody2D rb = bullet.GetComponent<Rigidbody2D>();
 
-            // ¹ß»ç ¹æÇâÀ¸·Î ÃÑ¾ËÀ» ÀÌµ¿½ÃÅµ´Ï´Ù.
+            // ë°œì‚¬ ë°©í–¥ìœ¼ë¡œ ì´ì•Œì„ ì´ë™ì‹œí‚µë‹ˆë‹¤.
             rb.velocity = bulletDirection * bulletSpeed;
 
 

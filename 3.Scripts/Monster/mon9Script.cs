@@ -4,9 +4,9 @@ using UnityEngine;
 
 public class mon9Script : MonoBehaviour
 {
-    [SerializeField] GameObject InstantiateEachMonster_Prefeb;
+    [SerializeField] private GameObject InstantiateEachMonster_Prefeb;
 
-    Vector3 addPosition = new Vector3(-3f, -3f, 0 );
+    private Vector3 addPosition = new Vector3(-3f, -3f, 0 );
 
     private void InstantiateEachMonster() // animation event funtion
     {
@@ -14,7 +14,5 @@ public class mon9Script : MonoBehaviour
         {
             Instantiate(InstantiateEachMonster_Prefeb , transform.position + addPosition, Quaternion.identity);
         }
-
-
     }
 }

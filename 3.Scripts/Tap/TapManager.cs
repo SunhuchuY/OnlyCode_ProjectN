@@ -11,18 +11,11 @@ public class TapManager : MonoBehaviour
 
     const int tapCount = 4;
 
-
     public Transform TapManagerObject;
     public Transform[] tapBtnPosition = new Transform[tapCount]; // 버튼별
     public Transform[] tapContentPosition = new Transform[tapCount]; // 콘텐츠별
     [SerializeField] Transform TapBoxStartPosition, TapBoxEndPosition; 
-
     // 0이 attack, 1이 defense
-
-    float fadeDuration = 0.3f;
-
-    private Tween fadeTween;
-
 
     bool isScreenTop = false;
 

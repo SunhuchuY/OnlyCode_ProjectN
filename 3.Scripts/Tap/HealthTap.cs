@@ -150,7 +150,7 @@ public class HealthTap : MonoBehaviour
     13699596281689400, 16439515538027300
         });
 
-        CurHealth_Text.text = $"10초에 한번씩 {ToCurrencyString(GameManager.playerScript.forsecondsUpAmount)}로 회복 증가";
+        CurHealth_Text.text = $"10초에 한번씩 {ToCurrencyString(GameManager.Instance.playerScript.forsecondsUpAmount)}로 회복 증가";
         MaxHealth_Text.text = $"{ToCurrencyString(upMaxHealth_Mount)}만큼 최대 체력 증가";
 
         reqCurHealth_Text.text = $"{ToCurrencyString(reqHealthTapDictionary[HealthTapEnum.upCurHealth][0])}";
@@ -164,7 +164,7 @@ public class HealthTap : MonoBehaviour
 
     public void upMaxHealth_Btn() 
     {
-        if (GameManager.playerScript.GetcurrentHealth() >= GameManager.playerScript.GetMaxHealth())
+        if (GameManager.Instance.playerScript.GetcurrentHealth() >= GameManager.Instance.playerScript.GetMaxHealth())
             return;
 
         UpAmount(HealthTapEnum.upMaxHealth);
@@ -183,11 +183,11 @@ public class HealthTap : MonoBehaviour
             switch (healthTapEnum)
             {
                 case HealthTapEnum.upCurHealth:
-                    level = GameManager.playerScript.forsecondsUpAmountLevel;
+                    level = GameManager.Instance.playerScript.forsecondsUpAmountLevel;
                     break;
 
                 case HealthTapEnum.upMaxHealth:
-                    level = GameManager.playerScript.maxHealthLevel;
+                    level = GameManager.Instance.playerScript.maxHealthLevel;
                     break;
             }
 
@@ -196,7 +196,7 @@ public class HealthTap : MonoBehaviour
 
             var requiredBloodStone = reqHealthTapDictionary[healthTapEnum][level - 1];
 
-            if (GameManager.uIManager.GetBloodStone() < requiredBloodStone)
+            if (GameManager.Instance.uIManager.GetBloodStone() < requiredBloodStone)
                 return; // 구매조건 불충족
 
             if (reqHealthTapDictionary[healthTapEnum].Length <= level)
@@ -210,11 +210,11 @@ public class HealthTap : MonoBehaviour
 
                     // text setting
                     reqCurHealth_Text.text = $"{ToCurrencyString(nextrequiredBloodStone)}";
-                    CurHealth_Text.text = ToCurrencyString( GameManager.playerScript.forsecondsUpAmount);
+                    CurHealth_Text.text = ToCurrencyString( GameManager.Instance.playerScript.forsecondsUpAmount);
 
                     // system setting
-                    GameManager.playerScript.forsecondsUpAmount += upForSecondsHp_Mount;
-                    GameManager.playerScript.forsecondsUpAmountLevel++;
+                    GameManager.Instance.playerScript.forsecondsUpAmount += upForSecondsHp_Mount;
+                    GameManager.Instance.playerScript.forsecondsUpAmountLevel++;
 
                     break;
                 case HealthTapEnum.upMaxHealth:
@@ -222,17 +222,17 @@ public class HealthTap : MonoBehaviour
                
 
                 reqMaxHealth_Text.text = $"{ToCurrencyString(nextrequiredBloodStone)}";
-                MaxHealth_Text.text = ToCurrencyString(GameManager.playerScript.sumMaxhp());
+                MaxHealth_Text.text = ToCurrencyString(GameManager.Instance.playerScript.sumMaxhp());
 
                 // system setting
-                GameManager.playerScript.SetMaxHealth((double)upMaxHealth_Mount);   
-                GameManager.playerScript.maxHealthLevel++;
+                GameManager.Instance.playerScript.SetMaxHealth((double)upMaxHealth_Mount);   
+                GameManager.Instance.playerScript.maxHealthLevel++;
                 
                     break;
             }
 
-            GameManager.uIManager.SetBloodStone(-1 * requiredBloodStone);
-            StartCoroutine(GameManager.playerScript.FadeInOut());
+            GameManager.Instance.uIManager.SetBloodStone(-1 * requiredBloodStone);
+            StartCoroutine(GameManager.Instance.playerScript.FadeInOut());
             isPress = true;
         }
     

@@ -8,10 +8,10 @@ using UnityEngine.UI;
 
 public class PowerOffScreen : MonoBehaviour
 {
-    [SerializeField] Slider exitSlider;
-    [SerializeField] TMP_Text dayText, timeText ,curWaveText, bloodstoneText, goldText, soulFragmentText;
+    [SerializeField] private Slider exitSlider;
+    [SerializeField] private TMP_Text dayText, timeText ,curWaveText, bloodstoneText, goldText, soulFragmentText;
 
-    Image sliderParent_Image;
+    private Image sliderParent_Image;
 
     private void Start()
     {
@@ -22,11 +22,11 @@ public class PowerOffScreen : MonoBehaviour
     {
         timeText.text = System.DateTime.Now.ToString("HH:mm");
         dayText.text = System.DateTime.Now.ToString("yyyy-MM-dd");
-        curWaveText.text = $"현재 웨이브 : {GameManager.monsterControll.curWaveLev}";
+        curWaveText.text = $"현재 웨이브 : {GameManager.Instance.monsterControll.curWaveLev}";
 
-        bloodstoneText.text = $"{GameManager.uIManager.GetBloodStone()}";
-        goldText.text = $"{GameManager.uIManager.GetGold()}";
-        soulFragmentText.text = $"{GameManager.uIManager.GetSoulFragment()}";
+        bloodstoneText.text = $"{GameManager.Instance.uIManager.GetBloodStone()}";
+        goldText.text = $"{GameManager.Instance.uIManager.GetGold()}";
+        soulFragmentText.text = $"{GameManager.Instance.uIManager.GetSoulFragment()}";
 
             if (exitSlider.value == 1f) // PC
             {

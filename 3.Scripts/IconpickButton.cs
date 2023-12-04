@@ -9,6 +9,6 @@ public class IconpickButton : MonoBehaviour
 
     private void Start()
     {
-        gameObject.GetComponent<Image>().sprite = GameManager.skillTreeManager.cardDatas[skillNum].cardSprite;
+        gameObject.GetComponent<Image>().sprite = GameManager.Instance.skillTreeManager.cardDatas[skillNum].cardSprite;
     }
 }

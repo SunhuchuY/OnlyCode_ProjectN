@@ -6,13 +6,14 @@ using UnityEngine;
 public class mon8Script : MonoBehaviour
 {
     public int stackCount = 0;
-    Monster monster;
     public GameObject trailRendererPrefeb;
-    GameObject emptyObj;
 
-    TrailRenderer trailRenderer;
+    private TrailRenderer trailRenderer;
+    private GameObject emptyObj;
+    private Monster monster;
 
-    const float moveDistance_Interval = 1f, moveDuration = 1f;
+    readonly private float moveDistance_Interval = 1f;
+    readonly private float moveDuration = 1f;
 
     private void Start()
     {

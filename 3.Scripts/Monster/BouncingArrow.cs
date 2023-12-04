@@ -4,9 +4,11 @@ using UnityEngine;
 
 public class BouncingArrow : MonoBehaviour
 {
-    float speed = 2f;
-    Rigidbody2D rb;
+    private float speed = 2f;
+    private Rigidbody2D rb;
 
+    public bool isShield = false;
+    public int damage = 100;
     public GameObject effectPrefeb;
 
     private void Start()
@@ -17,15 +19,11 @@ public class BouncingArrow : MonoBehaviour
         StartCoroutine(delayDestroy());
     }
 
-    IEnumerator delayDestroy()
+    private IEnumerator delayDestroy()
     {
         yield return new WaitForSeconds(7f);
         Destroy(gameObject);
     }
-
-    public int damage = 100;
-
-    public bool isShield = false;
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
@@ -42,7 +40,7 @@ public class BouncingArrow : MonoBehaviour
         if (collision.CompareTag("Player") && !isShield)
         {
             if (collision.GetComponent<Player>() != null)
-                GameManager.playerScript.GetDamage(damage);
+                GameManager.Instance.playerScript.GetDamage(damage);
             else if (collision.GetComponent<Friend>() != null)
                 collision.GetComponent<Friend>().GetDamage(damage);
 

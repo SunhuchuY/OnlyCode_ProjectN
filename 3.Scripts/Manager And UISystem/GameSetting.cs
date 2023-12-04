@@ -10,25 +10,24 @@ using UnityEngine.UI;
 
 public class GameSetting : MonoBehaviour
 {
+
+    [SerializeField] private Image speedImage;
+    [SerializeField] private Sprite[] speedSprites = new Sprite[3];
+    [SerializeField] private GameObject BackGround_GameSetting;
+    [SerializeField] private GameObject gameAccount_Tap, settingPanel;
+    [SerializeField] private Slider backgroundMusic_Slider, effectMusic_InputField;
+    
     public float fadeDuration = 1f;
+
     private Tween fadeTween;
+    private float curSpeed = 1f;
+    private bool isOnGameSetting = false;
     private bool isPause = false;
 
-    [SerializeField] Image speedImage;
-    [SerializeField] Sprite[] speedSprites = new Sprite[3];
-    [SerializeField] GameObject BackGround_GameSetting;
-    [SerializeField] Slider backgroundMusic_Slider, effectMusic_InputField;
 
-    private float curSpeed = 1f;
-
-    bool isOnGameSetting = false;
-
-
-    [SerializeField] GameObject gameAccount_Tap, settingPanel;
 
     private void Start()
     {
-
         for (int i = 0; i < 4; i++)
         {
             BackGround_GameSetting.transform.GetChild(i).gameObject.SetActive(false);
@@ -110,7 +109,7 @@ public class GameSetting : MonoBehaviour
 
     private void FixedUpdate()
     {
-        GameManager.audioManager.background_Audio.volume = backgroundMusic_Slider.value;
+        GameManager.Instance.audioManager.background_Audio.volume = backgroundMusic_Slider.value;
     }
 
     public void OnGameSetting_btn(BaseEventData data) // btn

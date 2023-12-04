@@ -4,9 +4,9 @@ using UnityEngine;
 
 public class ArrowUnique : MonoBehaviour
 {
-    const int instantiateCount = 10;
+    readonly private int instantiateCount = 10;
 
-    [SerializeField] GameObject bounceArrowPrefeb;
+    [SerializeField] private GameObject bounceArrowPrefeb;
 
     private void OnTriggerExit2D(Collider2D collision)
     {

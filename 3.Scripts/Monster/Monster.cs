@@ -2,17 +2,18 @@ using DG.Tweening;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Numerics;
-using System.Threading;
-using System.Threading.Tasks;
-using Unity.Collections;
-using Unity.VisualScripting;
 using UnityEngine;
-using Vector3 = UnityEngine.Vector3;
-using Vector2 = UnityEngine.Vector2;
+using UnityHFSM;
+using BigInteger = System.Numerics.BigInteger;
 
 public class Monster : MonoBehaviour
 {
+    public enum AttackType
+    {
+        Melee,
+        Projectile
+    }
+
     public float moveSpeed = 5f; // Adjust the speed as needed
 
     // knock back
@@ -22,30 +23,23 @@ public class Monster : MonoBehaviour
     private bool isKnockedBack = false;
     private float knockbackTimer;
 
-    Animator animator;
-    Rigidbody2D rigidbody2D;
+    public Animator Anim { get; private set; }
+    public Rigidbody2D rigidbody2D { get; private set; }
 
     public int wideShotNum = 3;
 
-    float rangeX = 12f;
-    float rangeY = 12f;
-
-    [HideInInspector] public bool isStop = false; // ex) 몬스터 피격당했을때, 공격하는중일때
-
-    private Transform player;
+    public Transform player;
     [HideInInspector] public Transform targetObj;
 
-    public GameObject hpBar;
-    public SpriteRenderer hpBarSprite; // Reference to the SpriteRenderer for the HP bar
     public float maxHealth = 100f; // Maximum health
-    public float currentHealth = 100f; // Current health
 
     float healthDeclineDuration = 0.5f;
 
     [SerializeField] private string _dropEXP, _dropBloodStone, _dropGold; // 드랍
     public BigInteger dropEXP = 50, dropBloodStone = 1250, dropGold = 10; // 드랍
-    public float attackMount=60;
+    public float attackMount = 60;
 
+    public AttackType attackType = AttackType.Melee;
     public monsterType _monsterType = monsterType.Basic;
     public ArrowType _arrowType = ArrowType.Basic;
 
@@ -60,19 +54,44 @@ public class Monster : MonoBehaviour
     bool isFirstAttack = false;
 
     public bool isReverseScale = false;
-    
 
+    public float AttackRange = 2f;
 
-    private void Start()
+    public Health Health { get; private set; }
+    public StateMachine Fsm { get; private set; }
+
+    private Transform followParticleTransform;
+    private Queue<float> callBackSpeed = new Queue<float>();
+
+    private void Awake()
     {
         rigidbody2D = GetComponent<Rigidbody2D>();
+        Health = new Health();
+        Health.Cap = (int)maxHealth;
+        Health.Initialize();
+
+        if (GetComponentInChildren<AnimationKeyframeEventReceiver>() is { } _keyframeEventReceiver)
+        {
+            // 애니메이션 재생 중 키프레임 애니메이션이 발생했을 때 실행될 콜백을 등록합니다.
+            _keyframeEventReceiver.OnAttackEvent += OnAttack;
+            _keyframeEventReceiver.OnDeadEvent += OnDead;
+        }
+
+        Fsm = new StateMachine();
+        Fsm.AddState(nameof(MonsterState_Move), new MonsterState_Move() { Owner = this });
+        Fsm.AddState(nameof(MonsterState_Attack), new MonsterState_Attack() { Owner = this });
+        Fsm.AddState(nameof(MonsterState_Dead), new MonsterState_Dead() { Owner = this });
+        Fsm.AddTransitionFromAny(nameof(MonsterState_Dead), transition => Health.CurrentValue <= 0,
+            null, null, true);
+
+        Fsm.SetStartState(nameof(MonsterState_Move));
+        Fsm.Init();
 
         try
         {
             dropEXP = BigInteger.Parse(_dropEXP);
             dropGold = BigInteger.Parse(_dropGold);
             dropBloodStone = BigInteger.Parse(_dropBloodStone);
-
         }
         catch (FormatException ex)
         {
@@ -82,60 +101,30 @@ public class Monster : MonoBehaviour
 
     private void OnEnable()
     {
-        currentHealth = maxHealth;
-        // Find the player GameObject by tag
-        player = GameManager.player.transform;
-        animator = GetComponent<Animator>();
-        GetComponent<SpriteRenderer>().color = new Color(1, 1, 1, 1);
+        player = GameManager.Instance.player.transform;
+        targetObj = player; // temp: 임시적으로 적이 공격할 대상을 플레이어로 강제합니다.
+
+        Anim = GetComponentInChildren<Animator>();
         tempOriginalCurHp = maxHealth;
-        GetComponent<BoxCollider2D>().enabled = true;
 
         AllOfAnimation_False();
-        isStop = false;
 
+        // 애니메이션 재생 상태를 초기로 되돌립니다.
+        Anim.Rebind();
+        Anim.Update(0);
+
+        Health.Initialize();
+        Fsm.Init();
     }
 
     private void OnDisable()
     {
-        GameManager.bulletController.RemoveMonster(gameObject);
+        GameManager.Instance.bulletController.RemoveMonster(gameObject);
     }
 
     void Update()
     {
-        // Move the monster towards the player
-        if (!isStop)
-        {
-            MoveTowardsPlayer();
-        }
-
-        if (currentHealth <= 0)// 몬스터 사망
-        {
-            
-            GetComponent<BoxCollider2D>().enabled = false;
-            OnAnimator(isDead);
-        }
-
-
-        if (tempOriginalCurHp != currentHealth)
-        {
-            showHpBar_Time += Time.deltaTime;
-            hpBar.SetActive(true);
-
-
-            if (showHpBar_Time > showHpBar_coolTime)
-            {
-                showHpBar_Time = 0;
-                hpBar.SetActive(false);
-                tempOriginalCurHp = currentHealth;
-            }
-        }
-
-
-        // Ensure health doesn't go below zero
-        currentHealth = Mathf.Clamp(currentHealth, 0f,maxHealth);
-
-        // Update the HP bar
-        UpdateHPBar();
+        Fsm.OnLogic();
 
         // knock back
         if (isKnockedBack)
@@ -153,9 +142,8 @@ public class Monster : MonoBehaviour
             }
         }
 
-        if(followParticleTransform != null)
+        if (followParticleTransform != null)
             followParticleTransform.position = transform.position - UnityEngine.Vector3.up;
-
     }
 
     private void FixedUpdate()
@@ -164,7 +152,7 @@ public class Monster : MonoBehaviour
         Vector2 thisPositionData = gameObject.GetComponent<PositionData>().AimPosition.position;
 
         if (targetObj == null || targetObj.gameObject.activeSelf == false)
-            targetPositionData = GameManager.player.GetComponent<PositionData>().AimPosition.position;
+            targetPositionData = GameManager.Instance.player.GetComponent<PositionData>().AimPosition.position;
         else
             targetPositionData = targetObj.GetComponent<PositionData>().AimPosition.position;
 
@@ -180,11 +168,11 @@ public class Monster : MonoBehaviour
                 transform.localScale = new Vector2(1 * Math.Abs(transform.localScale.x), transform.localScale.y);
             }
         }
-        else    // 반대
+        else // 반대
         {
             if (thisPositionData.x > targetPositionData.x)
             {
-                transform.localScale = new Vector2(1 *Math.Abs(transform.localScale.x), transform.localScale.y);
+                transform.localScale = new Vector2(1 * Math.Abs(transform.localScale.x), transform.localScale.y);
             }
             else if (thisPositionData.x < targetPositionData.x)
             {
@@ -196,16 +184,15 @@ public class Monster : MonoBehaviour
             targetObj = null;
     }
 
-    void MoveTowardsPlayer()
+    private void OnAttack()
     {
-        // Calculate the direction from monster to player
-        UnityEngine.Vector3 direction = (player.position - transform.position).normalized;
-
-        // Move the monster towards the player
-        transform.Translate(direction * moveSpeed * Time.deltaTime);
+        if (attackType == AttackType.Melee)
+            Attack();
+        else if (attackType == AttackType.Projectile)
+            ShotArrow();
     }
 
-    void Attack() // 애니메이션 이벤트 함수
+    private void Attack() // 애니메이션 이벤트 함수
     {
         if (targetObj == null)
             return;
@@ -219,7 +206,7 @@ public class Monster : MonoBehaviour
         {
             case monsterType.FirstAttack:
 
-                 FirstAttackMonster firstAttackMonster = GetComponent<FirstAttackMonster>();
+                FirstAttackMonster firstAttackMonster = GetComponent<FirstAttackMonster>();
 
                 if (firstAttackMonster.isAlreadyFirstAttack == false)
                 {
@@ -237,14 +224,14 @@ public class Monster : MonoBehaviour
     {
         if (targetObj.GetComponent<Player>() != null)
         {
-            GameManager.playerScript.GetDamage(amount);
-            GameManager.bulletController.SetTarget(gameObject.transform);
+            GameManager.Instance.playerScript.GetDamage(amount);
+            GameManager.Instance.bulletController.SetTarget(gameObject.transform);
         }
         else if (targetObj.GetComponent<Friend>() != null)
         {
             Friend friend = targetObj.GetComponent<Friend>();
             friend.GetDamage(amount);
-            GameManager.bulletController.SetTarget(gameObject.transform);
+            GameManager.Instance.bulletController.SetTarget(gameObject.transform);
         }
     }
 
@@ -252,61 +239,35 @@ public class Monster : MonoBehaviour
     {
         if (targetObj.GetComponent<Player>() != null)
         {
-            GameManager.playerScript.GetDamage(amount);
-            GameManager.bulletController.SetTarget(gameObject.transform);
+            GameManager.Instance.playerScript.GetDamage(amount);
+            GameManager.Instance.bulletController.SetTarget(gameObject.transform);
         }
         else if (targetObj.GetComponent<Friend>() != null)
         {
             Friend friend = targetObj.GetComponent<Friend>();
             friend.GetDamage(amount);
-            GameManager.bulletController.SetTarget(gameObject.transform);
+            GameManager.Instance.bulletController.SetTarget(gameObject.transform);
         }
     }
 
     // Overload -> GetDamage(float) 
-    public void GetDamage(float Damage, bool isSkil = false , appearTextEnum appearEnum = appearTextEnum.basic)
+    public void GetDamage(float Damage, bool isSkil = false, appearTextEnum appearEnum = appearTextEnum.basic)
     {
-        currentHealth -= Damage;
-        GameManager.appearTextManager.AppearText((int)Damage, transform , appearEnum);
-        ShowHpBar();
+        Health.ApplyModifier((int)-Damage);
+        GameManager.Instance.appearTextManager.AppearText((int)Damage, transform, appearEnum);
     }
 
 
-    public void ShowHpBar()
-    {
-        isShowHpBar = true;
-        hpBar.SetActive(isShowHpBar);
-    }
-
-
-
-    string isAttack= "isAttack";
+    string isAttack = "isAttack";
     string isFirst = "isFirst";
     string isDead = "isDead";
 
-    private void OnTriggerEnter2D(Collider2D collision)
-    {
-        switch (collision.tag)
-        {
-        }
-    }
-    
+    private Coroutine m_AttackDelayCoroutine;
 
     private void OnTriggerStay2D(Collider2D collision)
     {
-        switch (collision.tag)
-        {
-            case "Player":
-                OnAnimator(isAttack);
-                targetObj = collision.transform;
-                isStop = true;
-                break;
-
-        }
-
         if (collision.gameObject.CompareTag("knockback") && !isKnockedBack)
         {
-
             // 방향 계산
             UnityEngine.Vector2 direction = (transform.position - collision.transform.position).normalized;
 
@@ -321,74 +282,22 @@ public class Monster : MonoBehaviour
         }
     }
 
-    public void OnAnimator(string animName, bool isStop_state= true)
-    {
-        if (animator == null)
-            return;
 
-        if (isKnockDown == true)
-            return;
-
-        animator.SetBool(animName, true);
-        isStop = isStop_state;
-    }
-
-    public void OffAnimator(string animName)
-    {
-        if (animator != null)
-        {
-            animator.SetBool(animName, false);
-        }
-    }
-
-    void stopFalse()
-    {
-        if (!isKnockDown && targetObj == null)
-        {
-            AllOfAnimation_False();
-            isStop = false;
-        }
-    }
-
-
-    void UpdateHPBar()
-    {
-        // Calculate the scale based on current health
-        float scaleX = currentHealth / maxHealth;
-
-        // Update the SpriteRenderer's scale
-        if(hpBarSprite!= null)
-        hpBarSprite.transform.DOScaleX(scaleX, healthDeclineDuration);
-
-    }
-
-    public void CounterAttack_Suffer()
-    {
-        if (animator != null)
-        {
-            isShowHpBar = true;
-            hpBar.SetActive(isShowHpBar);
-        }
-    }
-
-
-    private Transform followParticleTransform;
     public void _MoveSpeedDown(float speed_declineAmount, float duration = 2f)
     {
-        GameManager.particleManager.PlayParticle(transform, transform, 10);
+        GameManager.Instance.particleManager.PlayParticle(transform, transform, 10);
         StartCoroutine(MoveSpeedDown(speed_declineAmount, duration));
     }
-    IEnumerator MoveSpeedDown(float speed_declineAmount ,float duration )
-    {
-        followParticleTransform = GameManager.particleManager.GetparticleTransform();
 
-        float originalMoveSpeed = moveSpeed;
+    IEnumerator MoveSpeedDown(float speed_declineAmount, float duration)
+    {
+        callBackSpeed.Enqueue(moveSpeed);
         moveSpeed -= speed_declineAmount;
+        moveSpeed = Mathf.Min(0.3f);
 
         yield return new WaitForSeconds(duration);
 
-        moveSpeed = originalMoveSpeed;
-        followParticleTransform = null;
+        moveSpeed = callBackSpeed.Dequeue();
     }
 
     void ShotArrow() // animation event
@@ -402,26 +311,26 @@ public class Monster : MonoBehaviour
 
             case ArrowType.wideShot:
 
-                ShotArrowStatic(90);
+                ShotArrowStatic();
+                const int angleAlpha = 10;
 
-                for (int i = 1; i < wideShotNum; i++)
+                for (int i = 1; i <= wideShotNum / 2; i++)
                 {
-                    StartCoroutine(SequenceShot_Coroutine());
+                    ShotArrowWide(angleAlpha * i);
                 }
+
                 break;
         }
     }
 
     IEnumerator SequenceShot_Coroutine()
     {
-
-
         yield return new WaitForSeconds(0.3f);
 
         ShotArrowStatic();
     }
 
-    private void ShotArrowStatic(float alpha = 0)
+    private void ShotArrowWide(float alpha = 0)
     {
         if (targetObj == null)
             return;
@@ -452,7 +361,50 @@ public class Monster : MonoBehaviour
             case monsterType.FirstAttack:
                 FirstAttackMonster firstAttackMonster = GetComponent<FirstAttackMonster>();
 
-                if(firstAttackMonster.isAlreadyFirstAttack == false)
+                if (firstAttackMonster.isAlreadyFirstAttack == false)
+                    _bullet.GetComponent<ArrowScript>().damage = firstAttackMonster.firstAttack_Mount;
+                else
+                    _bullet.GetComponent<ArrowScript>().damage = (int)attackMount;
+
+                break;
+        }
+
+        // 발사 방향으로 총알을 이동시킵니다.
+        _rb.velocity = Vector3.forward * 5;
+    }
+
+    private void ShotArrowStatic(float alpha = 0)
+    {
+        if (targetObj == null)
+            return;
+
+        var _targetPosition = targetObj.GetComponent<PositionData>().AimPosition.position;
+        var _firePosition = gameObject.GetComponent<PositionData>().firePosition.position;
+
+        var _bullet = Instantiate(Arrow, _firePosition, Quaternion.identity);
+
+        // 총알의 방향을 설정합니다.
+        var _bulletDirection = (_targetPosition - _firePosition).normalized;
+
+        // 각도 계산을 위해 방향 벡터를 각도로 변환합니다.
+        float _angle = Mathf.Atan2(_bulletDirection.y, _bulletDirection.x) * Mathf.Rad2Deg;
+
+        // 총알의 회전을 설정합니다.
+        _bullet.transform.rotation = Quaternion.Euler(new Vector3(0, 0, _angle + alpha));
+
+        // Rigidbody2D 컴포넌트를 가져옵니다.
+        var _rb = _bullet.GetComponent<Rigidbody2D>();
+
+        // 데미지 설정
+        switch (_monsterType)
+        {
+            case monsterType.Basic:
+                _bullet.GetComponent<ArrowScript>().damage = (int)attackMount;
+                break;
+            case monsterType.FirstAttack:
+                FirstAttackMonster firstAttackMonster = GetComponent<FirstAttackMonster>();
+
+                if (firstAttackMonster.isAlreadyFirstAttack == false)
                     _bullet.GetComponent<ArrowScript>().damage = firstAttackMonster.firstAttack_Mount;
                 else
                     _bullet.GetComponent<ArrowScript>().damage = (int)attackMount;
@@ -464,21 +416,20 @@ public class Monster : MonoBehaviour
         _rb.velocity = _bulletDirection * 5;
     }
 
-    public void DotDamage(int dotDamage, int particleIndex )
+    public void DotDamage(int dotDamage, int particleIndex, float delay)
     {
-        StartCoroutine(DotDeal_Corutine(dotDamage, particleIndex));
+        StartCoroutine(DotDeal_Corutine(dotDamage, particleIndex, delay));
     }
 
-    IEnumerator DotDeal_Corutine(int _dotDamage ,int _particleIndex ,int repeatCount = 4)
+    IEnumerator DotDeal_Corutine(int _dotDamage, int _particleIndex, float intervalDelay = 1f, int repeatCount = 4)
     {
-        float intervalDelay = 1f;
-
         for (int i = 0; i < repeatCount; i++)
         {
             GetDamage(_dotDamage);
-            GameManager.appearTextManager.AppearText(_dotDamage, transform);
-            GameManager.particleManager.PlayParticle(transform, GameManager.particleManager.particleObjects[_particleIndex].transform
-            , _particleIndex, 2);
+            GameManager.Instance.appearTextManager.AppearText(_dotDamage, transform);
+            GameManager.Instance.particleManager.PlayParticle(transform,
+                GameManager.Instance.particleManager.particleObjects[_particleIndex].transform
+                , _particleIndex, 2);
             yield return new WaitForSeconds(intervalDelay);
         }
     }
@@ -487,16 +438,17 @@ public class Monster : MonoBehaviour
     {
         StartCoroutine(KnockDown_Corutine(duration));
     }
+
     IEnumerator KnockDown_Corutine(float duration)
     {
         isKnockDown = true;
-        isStop = true;
+        // isStop = true;
         AllOfAnimation_False();
-        animator.speed = 0f;
-        GameManager.particleManager.PlayParticle(transform, transform, 14,duration);
+        Anim.speed = 0f;
+        GameManager.Instance.particleManager.PlayParticle(transform, transform, 14, duration);
         yield return new WaitForSeconds(duration);
-        animator.speed = 1f;
-        isStop = false;
+        Anim.speed = 1f;
+        // isStop = false;
         isKnockDown = false;
     }
 
@@ -505,46 +457,37 @@ public class Monster : MonoBehaviour
         StartCoroutine(trick_Coroutine(duration, activeFalseToTransform));
     }
 
-    IEnumerator trick_Coroutine(float duration , Transform t)
+    private IEnumerator trick_Coroutine(float duration, Transform t)
     {
-        isStop = true;
-        animator.speed = 0f;
+        // isStop = true;
+        Anim.speed = 0f;
 
         yield return new WaitForSeconds(duration);
 
         if (t != null)
             t.gameObject.SetActive(false);
 
-        animator.speed = 1f;
-        isStop = false;
-
+        Anim.speed = 1f;
+        // isStop = false;
     }
 
-
-
-    IEnumerator OffAnimatorDelay(float delay, string animName)
-    {
-        yield return new WaitForSeconds(delay);
-        OffAnimator(animName);
-    }
-
-    void AllOfAnimation_False()
+    private void AllOfAnimation_False()
     {
         // Animator의 모든 Bool 파라미터 이름 가져오기
-        AnimatorControllerParameter[] parameters = animator.parameters;
+        AnimatorControllerParameter[] parameters = Anim.parameters;
         foreach (var parameter in parameters)
         {
             if (parameter.type == AnimatorControllerParameterType.Bool)
             {
                 // 각 Bool 파라미터를 false로 설정
-                animator.SetBool(parameter.name, false);
+                Anim.SetBool(parameter.name, false);
             }
         }
     }
 
 
     public void isJumpMoveStart() // anim event
-    { 
+    {
         if (transform.GetChild(1).GetComponent<JumpMonster>() != null)
         {
             transform.DOMove(targetObj.position, 0.8f);
@@ -559,13 +502,12 @@ public class Monster : MonoBehaviour
         }
     }
 
-    public void Dead() // anim event
+    public void OnDead()
     {
-        GameManager.uIManager.DropReward(dropEXP, dropBloodStone, dropGold, _monsterType);
-        GameManager.playerScript.SetCatchsOfMonsters(1);
-        GameManager.monsterControll.nuberofCatchs++;
+        GameManager.Instance.uIManager.DropReward(dropEXP, dropBloodStone, dropGold, _monsterType);
+        GameManager.Instance.playerScript.SetCatchsOfMonsters(1);
+        GameManager.Instance.monsterControll.nuberofCatchs++;
 
         gameObject.SetActive(false);
     }
-
 }

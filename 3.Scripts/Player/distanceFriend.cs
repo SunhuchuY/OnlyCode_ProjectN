@@ -77,9 +77,6 @@ public class distanceFriend : MonoBehaviour
     {
             GameObject bullet = Instantiate(bulletPrefab, transform.position, Quaternion.identity);
 
-        // 총알의 데미지를 설정
-            bullet.GetComponent<Bullet>().towerAttackAmount = attackAmount;
-
             // 총알의 방향을 설정합니다.
             Vector2 bulletDirection = (transform.parent.GetComponent<Friend>().searchObj.transform.position - transform.position).normalized;
 

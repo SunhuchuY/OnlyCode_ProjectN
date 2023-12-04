@@ -8,6 +8,8 @@ public class InventoryCard : MonoBehaviour
 {
     private int _cardIndex = -1;
 
+    [SerializeField] public Image iconImage, roundImage;
+    [SerializeField] private TMP_Text rateText;
     [HideInInspector] public int cardIndex
     {
         get { return _cardIndex; }
@@ -18,13 +20,10 @@ public class InventoryCard : MonoBehaviour
         }
     }
 
-    [SerializeField] public Image iconImage, roundImage;
-    [SerializeField] TMP_Text rateText;
 
     public void OnCardSystem()
     {
-        GameManager.skillTreeManager.PickCardButton(cardIndex);
-        Debug.Log("Buutton Test");
+        GameManager.Instance.skillTreeManager.PickCardButton(cardIndex);
     }
 
     private void CardSetting()
@@ -32,9 +31,9 @@ public class InventoryCard : MonoBehaviour
         if (cardIndex < 0)
             return;
 
-        iconImage.sprite = GameManager.skillTreeManager.cardDatas[cardIndex].cardSprite;
-        roundImage.sprite = GameManager.skillTreeManager.roundSprite[(int)GameManager.skillTreeManager.cardDatas[cardIndex].cardRate];
-        rateText.text = $"{GameManager.skillTreeManager.cardDatas[cardIndex].cardCost}";
+        iconImage.sprite = GameManager.Instance.skillTreeManager.cardDatas[cardIndex].cardSprite;
+        roundImage.sprite = GameManager.Instance.skillTreeManager.roundSprite[(int)GameManager.Instance.skillTreeManager.cardDatas[cardIndex].cardRate];
+        rateText.text = $"{GameManager.Instance.skillTreeManager.cardDatas[cardIndex].cardCost}";
 
     }
 }

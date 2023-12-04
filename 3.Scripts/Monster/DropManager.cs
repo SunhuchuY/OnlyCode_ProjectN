@@ -7,9 +7,8 @@ using UnityEngine.UIElements;
 public class DropManager : MonoBehaviour
 { // when monster died, Trigger On
   // 몬스터 죽었을때 나타나는 폭발 이펙트.
-
-    const int Mount = 50;
     const int dropMount = 1;
+    const int Mount = 50;
 
     public Dictionary<DropAnim, int> enumToGameObjectMap = new Dictionary<DropAnim, int>()
     {
@@ -17,9 +16,8 @@ public class DropManager : MonoBehaviour
     };
 
     [SerializeField] GameObject emptyObject;
-    [SerializeField]
-    GameObject[] gameObjects = new GameObject[dropMount];
-    List<GameObject> parents = new List<GameObject>();
+    [SerializeField] private GameObject[] gameObjects = new GameObject[dropMount];
+    private List<GameObject> parents = new List<GameObject>();
         
     private void Start()
     {
@@ -53,13 +51,6 @@ public class DropManager : MonoBehaviour
             }
         }
 
-        //Instantiate(gameObjects[enumToGameObjectMap[dropType]],
-          //  toPosition.position, Quaternion.identity);
      }
-}
-
-public enum DropAnim
-{
-    Basic
 }
 

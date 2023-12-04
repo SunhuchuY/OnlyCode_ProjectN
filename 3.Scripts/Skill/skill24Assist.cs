@@ -5,7 +5,6 @@ using UnityEngine;
 
 public class skill24Assist : MonoBehaviour
 {
-    // ¥Í¿∏∏È ∆®∞‹≥ø
 
     [SerializeField] ParticleSystem particleSystem;
 
@@ -13,7 +12,9 @@ public class skill24Assist : MonoBehaviour
     {
         if (collision.CompareTag("Monster"))
         {
-            particleSystem.Play();
+
+            if(particleSystem != null) 
+                particleSystem.Play();
         }
     }
 }

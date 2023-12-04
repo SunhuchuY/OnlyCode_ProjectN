@@ -129,8 +129,8 @@ public class DefenseTap : MonoBehaviour
         });
 
 
-        upCounterAttack_Text.text = $"{ToCurrencyString(GameManager.playerScript.sumCounter())}";
-        upDefenseAmount_Text.text = $"{ToCurrencyString(GameManager.playerScript.GetDefenseAmount())}";
+        upCounterAttack_Text.text = $"{ToCurrencyString(GameManager.Instance.playerScript.sumCounter())}";
+        upDefenseAmount_Text.text = $"{ToCurrencyString(GameManager.Instance.playerScript.GetDefenseAmount())}";
 
         reqCounterAttack_Text.text = $"{ToCurrencyString(reqDefenseTapDictionary[DefenseTapEnum.counterAttack][0])}";
         reqDefenseAmount_Text.text = $"{ToCurrencyString(reqDefenseTapDictionary[DefenseTapEnum.defenseAmount][0])}";
@@ -158,11 +158,11 @@ public class DefenseTap : MonoBehaviour
         switch (defenseTapEnum)
         {
             case DefenseTapEnum.counterAttack:
-                level = GameManager.playerScript.counterAttack_DamageLevel;
+                level = GameManager.Instance.playerScript.counterAttack_DamageLevel;
                 break;
 
             case DefenseTapEnum.defenseAmount:
-                level = GameManager.playerScript.defenseAmountLevel;
+                level = GameManager.Instance.playerScript.defenseAmountLevel;
                 break;
         }
 
@@ -171,7 +171,7 @@ public class DefenseTap : MonoBehaviour
 
         var requiredBloodStone = reqDefenseTapDictionary[defenseTapEnum][level - 1];
 
-        if (GameManager.uIManager.GetBloodStone() < requiredBloodStone)
+        if (GameManager.Instance.uIManager.GetBloodStone() < requiredBloodStone)
             return; // 구매조건 불충족
 
         if (reqDefenseTapDictionary[defenseTapEnum].Length <= level)
@@ -185,28 +185,28 @@ public class DefenseTap : MonoBehaviour
 
                 // text setting
                 reqCounterAttack_Text.text = $"{ToCurrencyString(nextrequiredBloodStone)}개가 필요합니다.";
-                upCounterAttack_Text.text = ToCurrencyString(GameManager.playerScript.sumCounter());
+                upCounterAttack_Text.text = ToCurrencyString(GameManager.Instance.playerScript.sumCounter());
 
                 // system setting
-                GameManager.playerScript.SetcounterAttack_Damage(upCounterAmount);
-                GameManager.playerScript.counterAttack_DamageLevel++;
+                GameManager.Instance.playerScript.SetcounterAttack_Damage(upCounterAmount);
+                GameManager.Instance.playerScript.counterAttack_DamageLevel++;
 
 
                 break;
             case DefenseTapEnum.defenseAmount:
                 // text setting
                 reqDefenseAmount_Text.text = $"{ToCurrencyString( nextrequiredBloodStone)}개가 필요합니다.";
-                upDefenseAmount_Text.text = ToCurrencyString(GameManager.playerScript.GetDefenseAmount());
+                upDefenseAmount_Text.text = ToCurrencyString(GameManager.Instance.playerScript.GetDefenseAmount());
 
                 // system setting
-                GameManager.playerScript.SetDefenseAmount(upDefenseAmount);
-                GameManager.playerScript.defenseAmountLevel++;
+                GameManager.Instance.playerScript.SetDefenseAmount(upDefenseAmount);
+                GameManager.Instance.playerScript.defenseAmountLevel++;
 
 
                 break;
         }
 
-        GameManager.uIManager.SetBloodStone(-1 * requiredBloodStone);
+        GameManager.Instance.uIManager.SetBloodStone(-1 * requiredBloodStone);
         isPress = true;
     }
 

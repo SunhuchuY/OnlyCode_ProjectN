@@ -6,17 +6,14 @@ using static UnityEngine.Rendering.DebugUI;
 
 public class StatisticScreen : MonoBehaviour
 {
+    private float slideDuration = 2f; 
+    
+    private int requiredBloodStone = 1000; // 공격력 업글 필요골드
+    private int goldRange_Start = 0 , goldRange_End = 10;
 
-    float slideDuration = 2f; 
+    [SerializeField] private Transform startPosition, EndPosition;
 
-    int requiredBloodStone = 1000; // 공격력 업글 필요골드
-    int goldRange_Start = 0 , goldRange_End = 10;
-
-    [SerializeField]
-    Transform startPosition, EndPosition;
-
-    [SerializeField]
-    GameObject Panel;
+    [SerializeField] private GameObject Panel;
 
     private void Start()
     {
@@ -34,8 +31,8 @@ public class StatisticScreen : MonoBehaviour
     {
         Panel.gameObject.SetActive(false);
 
-        GameManager.playerScript.StatePlayer(PlayerStateEnum.Restart);
-        GameManager.monsterControll.BigWaveSet(PlayerStateEnum.Restart);
+        GameManager.Instance.playerScript.StatePlayer(PlayerStateEnum.Restart);
+        GameManager.Instance.monsterControll.BigWaveSet(PlayerStateEnum.Restart);
     }
 
     public void ExitPanel() // button
@@ -52,13 +49,13 @@ public class StatisticScreen : MonoBehaviour
 
     public void ChangeGold() // button
     {
-        if(GameManager.uIManager.GetBloodStone() >= requiredBloodStone)
+        if(GameManager.Instance.uIManager.GetBloodStone() >= requiredBloodStone)
         {
-            GameManager.uIManager.SetBloodStone(-1 * requiredBloodStone);
+            GameManager.Instance.uIManager.SetBloodStone(-1 * requiredBloodStone);
 
             if (GameManager.RandomRange(goldRange_Start, goldRange_End))
             {
-                GameManager.uIManager.SetGold(100);
+                GameManager.Instance.uIManager.SetGold(100);
             }
         }
     }

@@ -1,17 +1,55 @@
 using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 
-public class Skill15Assist : MonoBehaviour
-{
-    private void OnTriggerEnter2D(Collider2D other)
+public class skill15Assist : MonoBehaviour
+{ // Heal Range Script 
+    const float coolTime = 2f;
+    float curTime = 0f;
+
+    int healAmount = 10;
+
+    List<Friend> friends = new List<Friend>();
+    [SerializeField] ParticleSystem particleSystem;
+
+    private void Update()
     {
-            if (transform.parent.GetComponent<Skill>() != null && other.CompareTag("Monster"))
+        curTime += Time.deltaTime;
+
+        if (curTime > coolTime)
+        {
+            StartCoroutine(ParticlePause_Delay());
+
+            for (int i = 0; i < friends.Count; i++)
             {
-                other.GetComponent<Monster>().GetDamage(transform.parent.GetComponent<Skill>().attackAmount, true);
-                GameManager.particleManager.PlayParticle(other.transform, GameManager.player.transform, 9);
+                friends[i].currentHealth += healAmount;
             }
+
+            curTime = 0;
+        }
+
     }
 
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if(collision.GetComponent<Friend>() != null)
+        {
+            friends.Add(collision.GetComponent<Friend>());
+        }
+    }
+
+    private void OnTriggerExit2D(Collider2D collision)
+    {
+        if (collision.GetComponent<Friend>() != null && friends.Contains(collision.GetComponent<Friend>()))
+        {
+            friends.Remove(collision.GetComponent<Friend>());
+        }
+    }
+
+    IEnumerator ParticlePause_Delay()
+    {
+        particleSystem.Play();
+        yield return new WaitForSeconds(1f);
+        particleSystem.Stop();
+    }
 }

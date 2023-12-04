@@ -7,8 +7,8 @@ using UnityEngine.UI;
 
 public class ShopManager : MonoBehaviour
 {
-    [SerializeField] GameObject shopPanel;
-    [SerializeField] TMP_Text diaText;
+    [SerializeField] private GameObject shopPanel;
+    [SerializeField] private TMP_Text diaText;
 
     private void Start()
     {
@@ -17,7 +17,7 @@ public class ShopManager : MonoBehaviour
 
     private void FixedUpdate()
     {
-        diaText.text = $"{GameManager.uIManager.soulFragment}";
+        diaText.text = $"{GameManager.Instance.uIManager.soulFragment}";
     }
 
     public void ShopIn_Funtion(BaseEventData data)

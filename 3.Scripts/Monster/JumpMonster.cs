@@ -6,60 +6,44 @@ using UnityEngine;
 
 public class JumpMonster : MonoBehaviour
 {
-    Monster monster;
-    string isAttack = "isAttack";
+    readonly private float bugfixc_CoolTime = 1f;
 
     public bool isJumpMoveStop = true;
 
-    float jumpMove_Duration = 2f;
+    private string isAttack = "isAttack";
+    private Monster monster;
 
-    const float bugfixc_CoolTime = 1f;
-    float bugfixc_CurTime = 0f;
+    private bool isJumping = false;
+    private bool isProgressRun_Animation = false;
 
+    private float jumpMove_Duration = 2f;
+    private float bugfixc_CurTime = 0f;
     public float moveSpeed = 3f;
 
-    [SerializeField] Sprite prepareJump_Sprite, Jumping_Sprite, arrive_Sprite;
-    [SerializeField] Sprite[] run_Sprite;
-    bool isJumping = false , isProgressRun_Animation = false;
+    [SerializeField] private Sprite prepareJump_Sprite, Jumping_Sprite, arrive_Sprite;
+    [SerializeField] private Sprite[] run_Sprite;
 
-    [SerializeField] JumpMonsterAssist jumpMonsterAssist;
-    [SerializeField] GameObject quakeAnim_Prefab;
+    [SerializeField] private JumpMonsterAssist jumpMonsterAssist;
+    [SerializeField] private GameObject quakeAnim_Prefab;
 
 
     private void Start()
     {
         monster = transform.parent.GetComponent<Monster>();
-
-        //runAnimation.Play("mon6run");
     }
 
     private void Update()
     {
-        /*if(isJumpMoveStop == false)
-        {
-            // Calculate the direction from monster to player
-            Vector3 direction = (monster.targetObj.position - transform.position).normalized;
-
-            // Move the monster towards the player
-            transform.Translate(direction * moveSpeed * Time.deltaTime);
-        }*/
-
-
-
-        if(monster.isStop == false && isProgressRun_Animation == false)
+        if (isProgressRun_Animation == false)
         {
             StartCoroutine(RunAnimation());
         }
-
     }
-
 
     private void OnTriggerStay2D(Collider2D collision)
     {
         if (collision.CompareTag("Player"))
         {
-            monster.isStop = true;
-
             if (isJumping == false)
             {
                 isJumping = true;
@@ -69,8 +53,6 @@ public class JumpMonster : MonoBehaviour
             }
         }
     }
-
-
 
     IEnumerator JumpAction_Animation()
     {
@@ -97,8 +79,6 @@ public class JumpMonster : MonoBehaviour
         jumpMonsterAssist.Attack();
 
         isJumping = false;
-
-        //runAnimation.Play("mon6run");
     }
 
     IEnumerator RunAnimation()

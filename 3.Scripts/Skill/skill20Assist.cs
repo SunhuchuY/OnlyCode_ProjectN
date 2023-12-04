@@ -4,8 +4,8 @@ using UnityEngine;
 
 public class skill20Assist : MonoBehaviour
 {
-   List<Monster> monsters = new List<Monster>();
-    bool isDeed = false;
+    private List<Monster> monsters = new List<Monster>();
+    private bool isDeed = false;
 
     private void OnEnable()
     {
@@ -38,10 +38,10 @@ public class skill20Assist : MonoBehaviour
 
         for (int i = 0; i < monsters.Count; i++)
         {
-            monsters[i].DotDamage(transform.parent.GetComponent<Skill>().dotDamage, 7);
+            monsters[i].DotDamage(transform.parent.GetComponent<Skill>().dotDamage, 7, 1);
         }
 
-        GameManager.particleManager.PlayParticle(transform, GameManager.player.transform, 15);
+        GameManager.Instance.particleManager.PlayParticle(transform, GameManager.Instance.player.transform, 15);
         isDeed = true;
     }
 

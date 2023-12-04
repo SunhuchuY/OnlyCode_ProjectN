@@ -59,7 +59,6 @@ public class MonsterControll : MonoBehaviour
     [SerializeField] GameObject bossPopup;
     [SerializeField] TMP_Text bossExplain_Text;
     [SerializeField] string[] bossExplain_String;
-    [SerializeField] Transform startPosition, endPosition;
 
     public Transform Getlist_MonsterParent()
     {
@@ -270,7 +269,7 @@ public class MonsterControll : MonoBehaviour
 
         if (isBoss) // 보스일때 바 상태
         {
-            waveBar.transform.DOScaleX(tempBossMonster.currentHealth / tempBossMonster.maxHealth, waveanimDuration);
+            waveBar.transform.DOScaleX(tempBossMonster.Health.CurrentValue / tempBossMonster.maxHealth, waveanimDuration);
         }
         else
         {
