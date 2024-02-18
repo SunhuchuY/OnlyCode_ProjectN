@@ -1,0 +1,29 @@
+{
+    "name": "MyProject.Runtime",
+    "rootNamespace": "",
+    "references": [
+        "GUID:6055be8ebefd69e48b49212b09b47b2f",
+        "GUID:f51ebe6a0ceec4240a699833d6309b23",
+        "GUID:810f54f43f696374fb3b49d45b461274",
+        "GUID:15fc0a57446b3144c949da3e2b9737a9",
+        "GUID:560b04d1a97f54a4e82edc0cbbb69285",
+        "GUID:60bfecf5cb232594891bc622f40d6bed",
+        "GUID:05e400cfeaf81194283f8eefaebe039f",
+        "GUID:4aaeddf7ab4312a48ad4c3106db50b97",
+        "GUID:f4cff319a04e5084fbd2179af05e0e0c",
+        "GUID:5734205361f673f4587a49a1ec3e3b0e",
+        "GUID:1f780532f0cec2c419e81b8d210eb83f"
+    ],
+    "includePlatforms": [
+        "Android",
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
