@@ -30,11 +30,11 @@ public class CalculateCommandReader
             switch (tokens[0])
             {
                 case ATK:
-                    value = (double)owner.attributes.ATK.Value;
+                    value = (double)owner.Stats["Attack"].CurrentValue;
                     break;
 
                 case HP:
-                    value = (double)owner.attributes.HP.CurrentValue;
+                    value = (double)owner.Stats["Hp"].CurrentValue;
                     break;
 
                 default:
@@ -57,10 +57,10 @@ public class CalculateCommandReader
                 switch (operandToken)
                 {
                     case ATK:
-                        ApplyOperation(ref value, operatorToken, (double)owner.attributes.ATK.Value);
+                        ApplyOperation(ref value, operatorToken, (double)owner.Stats["Attack"].CurrentValue);
                         break;
                     case HP:
-                        ApplyOperation(ref value, operatorToken, (double)owner.attributes.HP.CurrentValue);
+                        ApplyOperation(ref value, operatorToken, (double)owner.Stats["Hp"].CurrentValue);
                         break;
                     default:
                         throw new Exception("Unknown variable: " + operandToken);

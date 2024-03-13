@@ -24,23 +24,14 @@ public class Bullet : MonoBehaviour
         if (collision.CompareTag("Monster"))
         {
             k = true;
-            Monster monster =  collision.GetComponent<Monster>();
+            IGameActor monster =  collision.GetComponent<Monster>();
 
-            switch (bulletType)
-            {
-                case type.player:
-                     monster.ApplyDamage(GameManager.Instance.playerScript.GetAttack());
-                    break;
-                case type.tower:
-                    //monster.GetDamage(GameManager.Instance.playerScript.Attack.CurrentValue, true);
-                    break;
-                case type.sequencs:
-                    //monster.GetDamage(exptionAttackAmount, true);
-                    break;
+            // TODO: 리팩토링이 필요합니다.
+            Damage damage = new Damage() { Magnitude = -GameManager.Instance.playerScript.GetAttack() };
+            monster.Stats["Hp"].ApplyModifier(damage);
 
-            }
-
-            GameManager.Instance.objectPoolManager.PlayParticle("Prefab/Particle/17", monster.transform.position);
+            GameManager.Instance.objectPoolManager.PlayParticle("Prefab/Particle/17", monster.Go.transform.position);
+            
             BulletsObjectPool.Instance.ReleaseGO("Bullet1", gameObject);
         }
     }

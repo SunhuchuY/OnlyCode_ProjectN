@@ -1,5 +1,6 @@
 using DG.Tweening;
 using System.Collections;
+using System.Linq;
 using UniRx;
 using UnityEngine;
 
@@ -22,13 +23,19 @@ public class PlayerUI : MonoBehaviour
         healthColorOrigin = playerHealthAndManaPanelAccessor.HealthFillImage.color;
 
         player.OnChangeDefense += _defense => ChangeHealthFillColor();
-        player.OnChangeInvincible += _invincible => ChangeHealthFillColor();
+        
+        player.TagController.tags.ObserveAdd()
+            .Subscribe(_ => ChangeHealthFillColor())
+            .AddTo(this);
+        player.TagController.tags.ObserveRemove()
+            .Subscribe(_ => ChangeHealthFillColor())
+            .AddTo(this);
 
         player.Stats["Hp"].OnChangesCurrentValueIntAsObservable.Subscribe(UpdateHealthBar).AddTo(gameObject);
         player.Stats["Hp"].Cap.Select(Mathf.RoundToInt).Subscribe(UpdateHealthBar).AddTo(gameObject);
 
-        player.Stats["Mana"].OnChangesCurrentValueIntAsObservable.Subscribe(UpdateMana).AddTo(gameObject);
-        player.Stats["Mana"].Cap.Select(Mathf.RoundToInt).Subscribe(UpdateMana).AddTo(gameObject);
+        player.Stats["Mp"].OnChangesCurrentValueIntAsObservable.Subscribe(UpdateMana).AddTo(gameObject);
+        player.Stats["Mp"].Cap.Select(Mathf.RoundToInt).Subscribe(UpdateMana).AddTo(gameObject);
 
         ChangeHealthFillColor();
         UpdateHealthBar(0);
@@ -53,9 +60,11 @@ public class PlayerUI : MonoBehaviour
 
     private void ChangeHealthFillColor()
     {
-        bool _changeToGray = player.IsDefenseUp || player.IsInvincible;
+        bool _changeToGray = player.IsDefenseUp || player.GetIsInvincible();
 
-        playerHealthAndManaPanelAccessor.HealthFillImage.color = _changeToGray ? Color.gray : healthColorOrigin;
+        playerHealthAndManaPanelAccessor.HealthFillImage.color = _changeToGray 
+            ? Color.gray 
+            : healthColorOrigin;
     }
 
     private void UpdateHealthBar(int _)
@@ -109,12 +118,12 @@ public class PlayerUI : MonoBehaviour
 
     private void UpdateMana(int _)
     {
-        for (int i = 0; i < player.Stats["Mana"].CurrentValueInt; ++i)
+        for (int i = 0; i < player.Stats["Mp"].CurrentValueInt; ++i)
             playerHealthAndManaPanelAccessor.ManaSlots.GetChild(i).GetChild(0).gameObject.SetActive(true);
 
-        for (int i = player.Stats["Mana"].CurrentValueInt; i < player.Stats["Mana"].Cap.Value; ++i)
+        for (int i = player.Stats["Mp"].CurrentValueInt; i < player.Stats["Mp"].Cap.Value; ++i)
             playerHealthAndManaPanelAccessor.ManaSlots.GetChild(i).GetChild(0).gameObject.SetActive(false);
 
-        playerHealthAndManaPanelAccessor.ManaText.text = $"Mana : {player.Stats["Mana"].CurrentValue}";
+        playerHealthAndManaPanelAccessor.ManaText.text = $"Mp : {player.Stats["Mp"].CurrentValue}";
     }
 }

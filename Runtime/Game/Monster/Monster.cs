@@ -5,96 +5,23 @@ using UniRx;
 using Unity.Linq;
 using UnityEngine;
 using UnityHFSM;
-using BigInteger = System.Numerics.BigInteger;
 
-public class MonsterStat<T> where T : struct
+public class Monster : MonoBehaviour, IGameActor
 {
-    private List<T> Modifiers = new List<T>();
-    private Func<T, T, T> addOperation;
-
-    public MonsterStat(T baseValue, Func<T, T, T> addOperation)
-    {
-        m_baseValue = baseValue;
-        this.addOperation = addOperation;
-    }
-
-    public void AddModifier(T modifier)
-    {
-        Modifiers.Add(modifier);
-    }
-
-    public void RemoveModifier(T modifier)
-    {
-        Modifiers.Remove(modifier);
-    }
-
-    private readonly T m_baseValue;
-
-    public T Value
-    {
-        get
-        {
-            T final = m_baseValue;
-            // Modifier 적용 로직
-            foreach (var modifier in Modifiers)
-            {
-                final = addOperation(final, modifier);
-            }
-
-            return final;
-        }
-    }
-}
-
-public class MonsterAttributes
-{
-    private const float DestroyTime = 60 * 10;
-    private const float AdjustDetection = 1;
-
-    public readonly Attribute HP;
-    public MonsterStat<BigInteger> ATK;
-    public readonly float ATKSpeed;
-    public readonly float MoveSpeed;
-    public readonly float Detection; // 탐지거리
-
-    public readonly BigInteger DropMagicStone;
-    public readonly BigInteger DropEXP;
-    public readonly BigInteger DropGold;
-
-    public MonsterAttributes(MonsterProfile profile)
-    {
-        HP = new Attribute();
-        HP.Cap = new UniRx.ReactiveProperty<float>(profile.HP);
-        HP.Initialize();
-
-        ATK = new MonsterStat<BigInteger>(profile.ATK, (a, b) => a + b);
-        ATKSpeed = profile.AttackSpeed;
-        Detection = profile.DetectionRange - AdjustDetection;
-        MoveSpeed = profile.Speed;
-
-        DropMagicStone = profile.GetMagicStone;
-        DropEXP = profile.GetXP;
-        DropMagicStone = profile.GetGold;
-    }
-}
-
-public class Monster : MonoBehaviour
-{
-    [SerializeField] public bool isLookLeft = false;
-    public Animator Animator { get; private set; }
-    public Rigidbody2D rigidbody2D { get; private set; }
-    public Collider2D collider { get; private set; }
-    public StateMachine Fsm { get; private set; }
-
     public GameObject Go => gameObject;
     public Stats Stats { get; private set; } = new Stats();
     public GameplayEffectController EffectController { get; set; }
     public TagController TagController { get; private set; } = new();
     public ActiveSkillController SkillController { get; private set; }
+    public Animator Anim { get; private set; }
     public ActorType ActorType => ActorType.Monster;
 
-    public Transform player;
-    public Transform targetObj;
+    public MonsterProfile Data;
+
+    public Rigidbody2D rigidbody2D { get; private set; }
+    public Collider2D collider { get; private set; }
+    public StateMachine Fsm { get; private set; }
+    private GameObject model;
 
     private Transform firePoint;
     float originalmoveSpeed;
@@ -110,19 +37,20 @@ public class Monster : MonoBehaviour
     private Stack<float> moveSpeedStack = new Stack<float>();
     private Stack<float> attackSpeedStack = new Stack<float>();
 
-    public MonsterAttributes attributes { get; private set; }
     public EnemyTargetDetector detector { get; private set; }
-    public MonsterAnimationKeyframeEventReceiver keyframeEventReceiver { get; private set; }
-    int _id = -1;
+    public AnimKeyframeEventReceiver keyframeEventReceiver;
 
-    private void Awake()
+    public event Action OnAttackEvent;
+    public event Action OnPassiveEvent;
+
+    public void Start()
     {
         SetupComponents();
 
         keyframeEventReceiver.OnAttackEvent += OnAttack;
         keyframeEventReceiver.OnDeadEvent += OnDead;
 
-        attributes.HP.OnChangesCurrentValueIntAsObservable
+        Stats["Hp"].OnChangesCurrentValueIntAsObservable
             .Where(x => x <= 0)
             .Subscribe(_ =>
             {
@@ -130,86 +58,90 @@ public class Monster : MonoBehaviour
                 collider.enabled = false;
             });
 
+        Stats["Hp"].OnBeforeApplyModifierDelegate += Stats_HP_OnBeforeApplyModifierDelegate;
+
         SetupFSM();
-    }
-
-    public event Action AttackEvent;
-    public event Action PassiveEvent;
-
-    void OnEnable()
-    {
-        Resets();
-    }
-
-    void OnDisable()
-    {
-        attributes.HP.Initialize();
     }
 
     void Update()
     {
         Fsm.OnLogic();
 
-        int lookDirection = isLookLeft ? -1 : 1;
         int toTargetDirection =
-            transform.position.x > detector.GetCurrentTargetTransform().transform.position.x ? -1 : 1;
+            transform.position.x > detector.GetCurrentTargetActor().Go.transform.position.x ? -1 : 1;
 
         transform.localScale = new Vector2(
-            Mathf.Abs(transform.localScale.x) * lookDirection * toTargetDirection,
+            Mathf.Abs(transform.localScale.x) * toTargetDirection,
             transform.localScale.y);
     }
 
     public void Resets()
     {
-        Animator.Rebind();
-        Animator.Update(0);
-        Animator.SetFloat("AttackSpeed", attributes.ATKSpeed);
+        Anim.Rebind();
+        Anim.Update(0);
+        Anim.SetFloat("AttackSpeed", Stats["AttackSpeed"].CurrentValue);
         Fsm.Init();
         collider.enabled = true;
+        Stats["Hp"].Initialize();
     }
 
     void SetupComponents()
     {
-        _id = int.Parse(transform.parent.name);
-        MonsterProfile _profile = StageParser.Instance.monsterProfiles[_id];
-        attributes = new(_profile);
-
-        Animator = GetComponentInChildren<Animator>();
+        Anim = GetComponentInChildren<Animator>();
         rigidbody2D = GetComponent<Rigidbody2D>();
         collider = GetComponent<Collider2D>();
+
+        EffectController = gameObject.AddComponent<GameplayEffectController>();
+        EffectController.Initialize(this);
 
         detector = gameObject.AddComponent<EnemyTargetDetector>();
         detector.Owner = this;
 
-        keyframeEventReceiver = GetComponentInChildren<MonsterAnimationKeyframeEventReceiver>();
+        Stats.AddStat("Hp", new Attribute() { Cap = new(Data.HP) }.Initialize());
+
+        var _attack = new Stat().Initialize();
+        _attack.ApplyModifier(new StatModifier() { Magnitude = Data.ATK });
+        Stats.AddStat("Attack", _attack);
+
+        var _attackRange = new Stat().Initialize();
+        _attackRange.ApplyModifier(new StatModifier() { Magnitude = Data.DetectionRange });
+        Stats.AddStat("AttackRange", _attackRange);
+
+        var _attackSpeed = new Stat().Initialize();
+        _attackSpeed.ApplyModifier(new StatModifier() { Magnitude = Data.AttackSpeed });
+        Stats.AddStat("AttackSpeed", _attackSpeed);
+
+        var _moveSpeed = new Stat().Initialize();
+        _moveSpeed.ApplyModifier(new StatModifier() { Magnitude = Data.Speed });
+        Stats.AddStat("MoveSpeed", _moveSpeed);
 
         transform.tag = "Monster";
         gameObject.layer = LayerMask.NameToLayer("Actor");
 
         firePoint = gameObject.Descendants().FirstOrDefault(x => x.name == "FirePoint")?.transform;
 
-        SetupUniqueAbility(_profile);
+        SetupUniqueAbility();
         SetupSpecialAbility();
         SetupEventCommand();
     }
 
-    void SetupUniqueAbility(MonsterProfile _profile)
+    void SetupUniqueAbility()
     {
-        if (_profile.AttackType == 0)
+        if (Data.AttackType == 0)
         {
-            MeleeCommands commands = (MeleeCommands)StageParser.Instance.GetUniqueAbilityObject(_id, _profile);
+            MeleeCommands commands = (MeleeCommands)StageParser.Instance.GetUniqueAbilityObject(Data.Id, Data);
             MeleeCommandApply.Apply(this, commands);
         }
-        else if (_profile.AttackType == 1)
+        else if (Data.AttackType == 1)
         {
-            RangedCommand commands = (RangedCommand)StageParser.Instance.GetUniqueAbilityObject(_id, _profile);
+            RangedCommand commands = (RangedCommand)StageParser.Instance.GetUniqueAbilityObject(Data.Id, Data);
             RangedCommandApply.Apply(this, commands);
         }
     }
 
     void SetupSpecialAbility()
     {
-        SpecialsCommand command = StageParser.Instance.GetSpecialAbilityCommand(_id);
+        SpecialsCommand command = StageParser.Instance.GetSpecialAbilityCommand(Data.Id);
 
         if (command != null)
         {
@@ -219,7 +151,7 @@ public class Monster : MonoBehaviour
 
     void SetupEventCommand()
     {
-        EventCommand command = StageParser.Instance.GetEventCommand(_id);
+        EventCommand command = StageParser.Instance.GetEventCommand(Data.Id);
 
         if (command != null)
         {
@@ -233,7 +165,7 @@ public class Monster : MonoBehaviour
         Fsm.AddState(nameof(MonsterState_Move), new MonsterState_Move() { Owner = this });
         Fsm.AddState(nameof(MonsterState_Attack), new MonsterState_Attack() { Owner = this });
         Fsm.AddState(nameof(MonsterState_Dead), new MonsterState_Dead() { Owner = this });
-        Fsm.AddTransitionFromAny(nameof(MonsterState_Dead), transition => attributes.HP.CurrentValue <= 0,
+        Fsm.AddTransitionFromAny(nameof(MonsterState_Dead), transition => Stats["Hp"].CurrentValue <= 0,
             null, null, true);
 
         Fsm.SetStartState(nameof(MonsterState_Move));
@@ -242,24 +174,67 @@ public class Monster : MonoBehaviour
 
     void OnDead()
     {
-        Resets();
-        GameManager.Instance.userDataManager.GetReward(attributes.DropEXP, attributes.DropMagicStone,
-            attributes.DropGold, monsterType.Basic);
-        MonstersObjectPool.Instance.ReleaseGO(_id, gameObject);
+        GameManager.Instance.userDataManager.GetReward(
+            Data.GetXP, Data.GetMagicStone, Data.GetGold, monsterType.Basic);
+        Destroy(gameObject);
     }
 
     void OnAttack()
     {
-        PassiveEvent?.Invoke();
-        AttackEvent?.Invoke();
+        OnPassiveEvent?.Invoke();
+        OnAttackEvent?.Invoke();
     }
 
-    public void ApplyDamage(int damage)
+    private IStatModifier Stats_HP_OnBeforeApplyModifierDelegate(IStatModifier statModifier)
     {
-        Damage mod = new Damage();
-        mod.Magnitude = -damage;
-        attributes.HP.ApplyModifier(mod);
-        GameManager.Instance.appearTextManager.MonsterAppearText(CurrencyHelper.ToCurrencyString(damage), transform.position);
+        switch (statModifier)
+        {
+            case Damage damage:
+                return OnDamage(damage);
+
+            default:
+                return statModifier;
+        }
+    }
+
+    private Damage OnDamage(Damage damage)
+    {
+        Damage mewDamage = damage;
+
+        if (Stats.HasStat("Defense"))
+        {
+            mewDamage = new Damage()
+            { Magnitude = Mathf.Clamp(damage.Magnitude + Stats["Defense"].CurrentValue, -float.MaxValue, 0) };
+        }
+
+        if (mewDamage.Magnitude < 0)
+        {
+            GameManager.Instance.appearTextManager.MonsterAppearText
+                (CurrencyHelper.ToCurrencyString((int)mewDamage.Magnitude), Go.transform.position);
+        }
+
+        return mewDamage;
+    }
+
+
+    public void SetModel(GameObject model)
+    {
+        this.model = model;
+    }
+
+    public GameObject GetModel()
+    {
+        return model;
+    }
+
+    public bool IsBinding() 
+    {
+        return TagController.tags.ContainsKey("binding");
+    }
+
+    public bool IsCanNotAttack()
+    {
+        return TagController.tags.ContainsKey("cannot_attack");
     }
 }
 

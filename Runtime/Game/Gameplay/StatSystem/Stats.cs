@@ -10,6 +10,12 @@ public class Stats : ICustomIndexer
 
     private Dictionary<string, Stat> statDict = new();
 
+    public bool HasStat(string _name)
+    {
+        return statDict.ContainsKey(_name.ToLower());
+    }
+
+
     public Stats AddStat(string _name, Stat _stat)
     {
         string _lowerName = _name.ToLower();

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using Unity.Linq;
 using UnityEngine;
 
 public abstract class BaseRangedAbility : MonoBehaviour
@@ -12,26 +14,47 @@ public abstract class BaseRangedAbility : MonoBehaviour
         Owner = owner;
         PrefabName = prefabName;
 
-        Transform firePoint = null;
-        for (int i = 0; i < transform.childCount; i++)
+        Transform firePoint = GetFirePoint();
+        FireTf = firePoint != null ? firePoint : owner.transform;
+    }
+        
+    private Transform GetFirePoint() 
+    {
+        // "arm-B-IK"를 우선 탐색
+        Transform armBIK = Owner.GetModel().transform.Find("arm-B-IK");
+        if (armBIK != null)
         {
-            Transform child = transform.GetChild(i);
-            if (child.name.Contains("FirePoint"))
+            Transform firePoint = armBIK.Find("FirePoint");
+            if (firePoint != null)
             {
-                firePoint = child;
-                break;
+                return firePoint;
             }
         }
 
-        if (firePoint != null)
+        // "arm-B-IK"에 "FirePoint"가 없는 경우, 전체 모델에서 "FirePoint"를 탐색
+        return FindInDescendants(Owner.GetModel().transform, "FirePoint");
+    }
+
+    private Transform FindInDescendants(Transform root, string targetName)
+    {
+        Queue<Transform> queue = new Queue<Transform>();
+        queue.Enqueue(root);
+
+        while (queue.Count > 0)
         {
-            FireTf = firePoint;
+            Transform current = queue.Dequeue();
+            if (current.name == targetName)
+            {
+                return current;
+            }
+
+            foreach (Transform child in current)
+            {
+                queue.Enqueue(child);
+            }
         }
-        else
-        {
-            Debug.LogWarning("FirePoint가 존재하지 않으므로 해당 몬스터의 포지션을 설정합니다.");
-            FireTf = owner.transform;
-        }
+
+        return null; // "FirePoint"를 찾지 못함
     }
 
     public bool IsInitialized()

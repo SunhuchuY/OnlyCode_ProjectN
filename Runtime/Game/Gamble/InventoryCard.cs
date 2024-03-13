@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using TMPro;
 using UniRx;
@@ -6,23 +7,25 @@ using UnityEngine.UI;
 
 public class InventoryCard : MonoBehaviour
 {
-    public int slot = 1; // 만약 정상적으로 작동하지 않으면 OutOfRange가 발생합니다.
-
     [SerializeField] private Button assignButton;
     [SerializeField] private RectTransform costTf;
     [SerializeField] public Image iconImage, roundImage, skillCostImage;
     [SerializeField] private TMP_Text rateText;
 
-    private IEnumerator Start()
-    {
-        yield return null;
-        yield return null;
+    private event Action<int> initializeSlotEvent;
 
-        SubscribeSlot();
-        ButtonAddListener();
+    private InventoryCard()
+    {
+        initializeSlotEvent += SubscribeSlot;
+        initializeSlotEvent += ButtonAddListener;
     }
 
-    private void ButtonAddListener()
+    public void InitializeSlot(int slot)
+    {
+        initializeSlotEvent.Invoke(slot);
+    }
+
+    private void ButtonAddListener(int slot)
     {
         assignButton.onClick.AddListener(() =>
         {
@@ -31,20 +34,17 @@ public class InventoryCard : MonoBehaviour
         });
     }
 
-    private void SubscribeSlot()
+    private void SubscribeSlot(int slot)
     {
-        if (BackEnd.Backend.IsLogin)
-        {
-            GameManager.Instance.userDataManager.userData.SkillsInUseList.ObserveEveryValueChanged(x => x[slot])
-                .Subscribe(skillID =>
-                {
-                    ActiveSkillData curSkill = DataTable.ActiveSkillDataTable.ContainsKey(skillID)
-                            ? DataTable.ActiveSkillDataTable[skillID]
-                            : null;
+        GameManager.Instance.userDataManager.userData.SkillsInUseList.ObserveEveryValueChanged(x => x[slot])
+            .Subscribe(skillID =>
+            {
+                ActiveSkillData curSkill = DataTable.ActiveSkillDataTable.ContainsKey(skillID)
+                        ? DataTable.ActiveSkillDataTable[skillID]
+                        : null;
 
-                    Initialize(curSkill);
-                });
-        }
+                Initialize(curSkill);
+            });
     }
 
     private void Initialize(ActiveSkillData curSkill)

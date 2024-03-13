@@ -16,10 +16,7 @@ public class AccountSetting_VersionInfo : MonoBehaviour, IAccountSetting_UI_Comp
     }
     private void Start()
     {
-        var bro = Backend.Utils.GetLatestVersion();
-        string version = bro.GetReturnValuetoJSON()["version"].ToString();
-
-        versionText.text = version;
+        versionText.text = Application.version;
     }
 }
 

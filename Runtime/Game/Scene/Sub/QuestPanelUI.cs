@@ -11,8 +11,8 @@ public class QuestPanelUI : BaseToggleUI<QuestPanelUI.QuestPanelType>
     [SerializeField] private SpriteAtlas uiAtlas;
     public QuestPanelAccessor accessor;
     protected override Dictionary<QuestPanelType, (Button, RectTransform)> Dict { get; set; }
-    private Dictionary<QuestPanelType, GameObject> GOTemplates;
     private Dictionary<QuestPanelType, RectTransform> placeHolders;
+    private GameObject goTemplate;
 
     public enum QuestPanelType
     {
@@ -32,9 +32,10 @@ public class QuestPanelUI : BaseToggleUI<QuestPanelUI.QuestPanelType>
         }
 
         accessor.ExitButton.onClick.AddListener(() => accessor.gameObject.SetActive(false));
-        InitializePlaceHolders();
-        InitializeDict();
+        InitPlaceHolders();
+        InitDict();
         InitToggleUI();
+        goTemplate = Resources.Load<GameObject>("Prefab/UI/QuestUI");
         DisableAllButtons();
         DisableAllPanels();
         OnAction(QuestPanelUI.QuestPanelType.Daily);
@@ -43,7 +44,7 @@ public class QuestPanelUI : BaseToggleUI<QuestPanelUI.QuestPanelType>
         SubscribeStoryQuestToBigwave(GameManager.Instance.questData.questData.EpisodeCount.Value);
     }
 
-    private void InitializePlaceHolders()
+    private void InitPlaceHolders()
     {
         placeHolders = new Dictionary<QuestPanelType, RectTransform>()
         {
@@ -51,10 +52,8 @@ public class QuestPanelUI : BaseToggleUI<QuestPanelUI.QuestPanelType>
             { QuestPanelType.Week, accessor.WeekPlaceholder },
             { QuestPanelType.Story, accessor.StoryPlaceholder }
         };
-        GOTemplates = GetBackupTemplates(placeHolders);
     }
-
-    private void InitializeDict()
+    private void InitDict()
     {
         Dict = new Dictionary<QuestPanelType, (Button, RectTransform)>()
         {
@@ -76,7 +75,7 @@ public class QuestPanelUI : BaseToggleUI<QuestPanelUI.QuestPanelType>
     {
         foreach (var quest in QuestParser.Instance.Quests[(int)type])
         {
-            GameObject go = Instantiate(GOTemplates[type], placeHolders[type]);
+            GameObject go = Instantiate(goTemplate, placeHolders[type]);
             QuestUIAccessor questAccessor = go.GetComponent<QuestUIAccessor>();
             ChangeState(questAccessor, quest, type);
             ButtonAddListener(questAccessor, quest, type);
@@ -89,7 +88,8 @@ public class QuestPanelUI : BaseToggleUI<QuestPanelUI.QuestPanelType>
             
             if (type == QuestPanelType.Story)
             {
-                questAccessor.ConditionText.text = $"Wave{10 * quest.condition.value}\n해금";
+                questAccessor.ConditionSlider.value = (float)GameManager.Instance.userDataManager.userData.BigWave / (float)(quest.condition.value + 1);
+                questAccessor.QuestCondition.CostText.text = $"Wave <color=red>{GameManager.Instance.userDataManager.userData.Wave}</color>/{quest.condition.value}";
             }
         }
     }
@@ -169,7 +169,7 @@ public class QuestPanelUI : BaseToggleUI<QuestPanelUI.QuestPanelType>
 
     private void AddGeneralQuestListener(QuestUIAccessor accessor, Quest quest)
     {
-        accessor.AcquireButton.onClick.AddListener(() =>
+        accessor.QuestAcquire.Button.onClick.AddListener(() =>
         {
             accessor.ChangeState(QuestUIAccessor.State.Complete);
             GiveReward(quest.reward);
@@ -179,14 +179,14 @@ public class QuestPanelUI : BaseToggleUI<QuestPanelUI.QuestPanelType>
 
     private void AddStoryQuestListener(QuestUIAccessor accessor, Quest quest)
     {
-        accessor.AcquireButton.onClick.AddListener(() =>
+        accessor.QuestAcquire.Button.onClick.AddListener(() =>
         {
             GiveReward(quest.reward);
             GameManager.Instance.questData.questData.EpisodeCount.Value++;
             LoadStoryScene(quest.condition.value); // 씬이 변경되면서 서버에 동기화됩니다.
         });
 
-        accessor.StoryRestartButton.onClick.AddListener(() =>
+        accessor.QquestComplete.Button.onClick.AddListener(() =>
         {
             LoadStoryScene(quest.condition.value);
         });
@@ -216,7 +216,8 @@ public class QuestPanelUI : BaseToggleUI<QuestPanelUI.QuestPanelType>
             }
             else
             {
-                accessor.ConditionText.text = $"<color=red>{CurrencyHelper.ToCurrencyString(newValue)}</color>/{CurrencyHelper.ToCurrencyString(quest.condition.value)}"; 
+                accessor.ConditionSlider.value = (float)newValue / (float)quest.condition.value;
+                accessor.QuestCondition.CostText.text = $"<color=red>{CurrencyHelper.ToCurrencyString(newValue)}</color>/{CurrencyHelper.ToCurrencyString(quest.condition.value)}"; 
             }
         });
     }
@@ -292,6 +293,12 @@ public class QuestPanelUI : BaseToggleUI<QuestPanelUI.QuestPanelType>
         }
 
         accessor.TitleText.text = originalText;
+        accessor.QuestCondition.Icon.sprite = rewardIcon;
+        accessor.QuestAcquire.Icon.sprite = rewardIcon;
+
+        accessor.RewardText.text = $"{CurrencyHelper.ToCurrencyString(quest.reward.value)}";
+        accessor.QuestAcquire.CostText.text = $"{CurrencyHelper.ToCurrencyString(quest.reward.value)}";
+
         accessor.Initialize(rewardIcon, quest.reward.value);
     }
 

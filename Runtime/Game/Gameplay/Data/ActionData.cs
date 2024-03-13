@@ -15,6 +15,7 @@ public class ApplyEffects : ActionData
     public TargetMethodData TargetMethod { get; set; }
     public List<IGameplayEffectData> Effects { get; set; } = new();
     public PlayVfxOnActor VfxOnApplication { get; set; }
+    public PlayVfxOnTargets VfxOnTargets { get; set; }
     public string VfxOnTargetAddress { get; set; }
 }
 
@@ -52,8 +53,8 @@ public class SummonFriend : ActionData
 {
     public int Id { get; set; }
     public string Attack { get; set; }
+    public string MaxHp { get; set; }
     public string AttackRange { get; set; }
-
     // friend의 move type이 chase일 때에만 적용됩니다.
     public string ChaseRange { get; set; }
     public string MoveSpeed { get; set; }
@@ -64,6 +65,16 @@ public class PlayVfxOnActor : ActionData
     public string VfxAddress { get; set; }
     public PlayVfxRotationType RotationType { get; set; } = PlayVfxRotationType.Identity;
     public string Scale { get; set; } = "1";
+    public float Duration { get; set; } = 0.2f;
+    public bool FollowPivot { get; set; } = false;
+}
+
+public class PlayVfxOnTargets : ActionData
+{
+    public string VfxAddress { get; set; }
+    public PlayVfxRotationType RotationType { get; set; } = PlayVfxRotationType.Identity;
+    public string Scale { get; set; } = "1";
+    public float Duration { get; set; } = 0.2f;
 }
 
 public class DespawnFriends : ActionData

@@ -63,7 +63,7 @@ public class UserDataUI : MonoBehaviour
     }
 
     private void UpdateGold(BigInteger _current)
-    {
+    {   
         if (goldTweener != null && goldTweener.IsActive())
         {
             goldTweener.Kill();

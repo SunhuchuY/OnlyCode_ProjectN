@@ -10,7 +10,7 @@ public static class RangedCommandApply
         // 공격력 관련 연산을 처리합니다.
         if (!string.IsNullOrEmpty(command.AddDamage))
         {
-            owner.attributes.ATK.AddModifier(CalculateCommandReader.GetValue(command.AddDamage, owner));
+            owner.Stats["Attack"].ApplyModifier(new StatModifier(){Magnitude = (float)CalculateCommandReader.GetValue(command.AddDamage, owner)});
         }
 
         BaseRangedAbility ability = null;
@@ -51,6 +51,6 @@ public static class RangedCommandApply
         }
 
         ability.BasicInitialize(owner, command.PrefabName);
-        owner.AttackEvent += ability.Shoot;
+        owner.OnAttackEvent += ability.Shoot;
     }
 }

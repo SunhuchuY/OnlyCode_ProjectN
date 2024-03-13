@@ -1,4 +1,5 @@
 using UniRx;
+using UniRx.Triggers;
 using Unity.Linq;
 using UnityEngine.Assertions;
 
@@ -6,7 +7,7 @@ public class GameplayWorld
 {
     public IReadOnlyReactiveCollection<IGameActor> Actors => actors;
     public System.Action<IGameActor> OnAddActor;
-    public System.Action<IGameActor> OnDespawnAction;
+    public System.Action<IGameActor> OnRemoveAction;
 
     private ReactiveCollection<IGameActor> actors = new();
 
@@ -19,15 +20,17 @@ public class GameplayWorld
 
         MessageBroker.Default.Receive<RequestDespawnActorEvent>().Subscribe(_event =>
         {
-            DespawnActor(_event.Actor);
+            RemoveActor(_event.Actor);
         });
     }
 
     public IGameActor SpawnActor(GameActorData _data)
     {
-        // todo
-        AddActor(null);
-        return null;
+        var _actor = ActorSpanwer.SpawnActor(_data);
+        AddActor(_actor);
+        _actor.Go.OnDestroyAsObservable()
+            .Subscribe(_ => RemoveActor(_actor));
+        return _actor;
     }
 
     public void AddActor(IGameActor _actor)
@@ -37,11 +40,10 @@ public class GameplayWorld
         OnAddActor?.Invoke(_actor);
     }
 
-    public void DespawnActor(IGameActor _actor)
+    public void RemoveActor(IGameActor _actor)
     {
         Assert.IsTrue(actors.Contains(_actor));
         actors.Remove(_actor);
-        OnDespawnAction?.Invoke(_actor);
-        _actor.Go.Destroy();
+        OnRemoveAction?.Invoke(_actor);
     }
 }

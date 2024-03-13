@@ -25,6 +25,7 @@ public class ActionSequenceContext
 {
     public IGameActor Actor { get; set; }
     public List<IGameActor> Targets { get; set; } = new();
+    public List<IGameActor> SpecifiedTargets { get; set; } = new();
 
     // HitFrameObject의 Action 재생시에는 초기화되지 않으며, 사용하지 말아야 합니다.
     public float ScaleByLevel { get; set; } // levelPer ^ skillLevel

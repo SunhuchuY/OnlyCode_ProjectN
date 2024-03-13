@@ -22,19 +22,18 @@ public class RangedAbilityPenetrate : BaseRangedAbility
             return;
         }
 
-        Vector2 targetPos = Owner.detector.GetCurrentTargetTransform().position;
+        Vector2 targetPos = Owner.detector.GetCurrentTargetActor().Go.transform.position;
         BulletOfMonster bullet = BulletsObjectPool.Instance.GetGO(PrefabName).GetComponent<BulletOfMonster>();
         
-        Vector2 bulletDirection = (targetPos - (Vector2)Owner.transform.position).normalized;
+        Vector2 bulletDirection = (targetPos - (Vector2)FireTf.position).normalized;
         float startAngle = Mathf.Atan2(bulletDirection.y, bulletDirection.x) * Mathf.Rad2Deg;
 
         bullet.transform.position = FireTf.transform.position;  
         bullet.transform.rotation = Quaternion.Euler(new Vector3(0, 0, startAngle));
         
-        bullet.Initialize((int)Owner.attributes.ATK.Value);
+        bullet.Initialize((int)Owner.Stats["Attack"].CurrentValue, "Prefab/Particle/20");
 
         PenetrateAddEvent(bullet, startAngle);
-
         bullet.rb.velocity = bulletDirection * Speed;
     }
 
@@ -52,11 +51,10 @@ public class RangedAbilityPenetrate : BaseRangedAbility
                 bullet.transform.position = eventTarget.transform.position;
                 bullet.transform.rotation = rotation;
 
-                bullet.Initialize((int)Owner.attributes.ATK.Value);
-                bullet.OnDelayEnabled(0.5f);
+                bullet.Initialize((int)Owner.Stats["Attack"].CurrentValue);
+                bullet.DelayColliderEnabled(0.5f);
                 bullet.rb.velocity = bullet.transform.right * Speed;
             }
         });
-
     }
 }

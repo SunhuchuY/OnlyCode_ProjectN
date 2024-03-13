@@ -1,11 +1,14 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class MeleeAbilityWideArea : BaseMeleeAbility
 {
-    float Radius;
+    const float MULTIPLY_RADIUS = 0.4f;
 
+    float Radius;
+     
     public void ParameterInitialize(float radius)
     {
         Radius = radius;
@@ -20,17 +23,16 @@ public class MeleeAbilityWideArea : BaseMeleeAbility
             return;
         }
 
-        Collider2D[] targets = Physics2D.OverlapCircleAll(Owner.transform.position, Radius, LayerMask.NameToLayer("Default"));
-        foreach (var tar in targets)
-        {
-            if (tar.tag == "Player")
+        GameManager.Instance.world.Actors
+            .Where(actor => actor.ActorType != ActorType.Monster 
+                    && Vector2.Distance(actor.Go.transform.position, Owner.Go.transform.position) < Radius)
+            .Select(actor => actor)
+            .ToList()
+            .ForEach(actor =>
             {
-                GameManager.Instance.playerScript.ApplyDamage((float)Owner.attributes.ATK.Value);
-            }
-            else if (tar.tag == "Friend")
-            {
-                tar.GetComponent<Friend>().GetDamage((float)Owner.attributes.ATK.Value);
-            }
-        }
-    }
+                Damage damage = new Damage() { Magnitude = -Owner.Stats["Attack"].CurrentValue };
+                actor.Stats["Hp"].ApplyModifier(damage);
+                GameManager.Instance.objectPoolManager.PlayParticle("Prefab/Particle/19", actor.Go.transform.position, Radius * MULTIPLY_RADIUS);
+            });
+     }
 }

@@ -1,4 +1,5 @@
 using Cysharp.Threading.Tasks;
+using Cysharp.Threading.Tasks.Triggers;
 using DG.Tweening;
 using Spine.Unity;
 using System;
@@ -96,8 +97,8 @@ public static class GameplayHandlers
     {
         public override void Invoke(ApplyEffects _data, ActionSequenceContext _context)
         {
-            Debug.Log("ApplyEffects performed!");
             var _targets = GetTargetMethodHandler(_data.TargetMethod.GetType()).Invoke(_data.TargetMethod, _context);
+            _context.Targets = _targets;
 
             GameObject _vfxOnTargetPrefab =
                 string.IsNullOrWhiteSpace(_data.VfxOnTargetAddress)
@@ -122,6 +123,11 @@ public static class GameplayHandlers
                 new PlayVfxOnActorActionHandler().Invoke(_data.VfxOnApplication, _context);
             }
 
+            if (_data.VfxOnTargets != null)
+            {
+                new PlayVfxOnTargetsActionHandler().Invoke(_data.VfxOnTargets, _context);
+            }
+
             if (_vfxOnTargetPrefab != null)
             {
                 _targets.ForEach(x =>
@@ -134,9 +140,9 @@ public static class GameplayHandlers
     {
         public override void Invoke(AddPersistentEffect _data, ActionSequenceContext _context)
         {
-            Debug.Log("Add Persistent Effect Performed!");
             var _effectData = DataTable.PersistentEffectDataTable[_data.Id];
             var _targets = GetTargetMethodHandler(_data.TargetMethod.GetType()).Invoke(_data.TargetMethod, _context);
+            _context.Targets = _targets;
             float _duration = ExpressionEvaluator.Evaluate<float>(_data.Duration, _context);
 
             GameObject _vfxOnTargetPrefab =
@@ -310,23 +316,29 @@ public static class GameplayHandlers
         public override void Invoke(SummonFriend _data, ActionSequenceContext _context)
         {
             var _friendData = DataTable.FriendDataTable[_data.Id];
-            var _friendPrefab = Resources.Load<GameObject>($"Friend/{_data.Id}/{_data.Id}_Prefab");
-            var _go = Object.Instantiate(_friendPrefab, _context.Position, Quaternion.identity);
-            var _goActor = _go.GetComponent<FriendActor>();
-            _goActor.Data = _friendData;
+            var _actor = GameManager.Instance.world.SpawnActor(_friendData) as FriendActor;
+            _actor.Go.transform.position = _context.Position;
 
             var _statModifiers = new List<IStatModifierData>()
             {
                 new StatModifierData()
                 {
-                    StatName = "Attack", OperationType = ModifierOperationType.Add, Value = _data.Attack
+                    StatName = "Attack", 
+                    OperationType = ModifierOperationType.Add, 
+                    Value = _data.Attack
                 },
                 new StatModifierData()
                 {
                     StatName = "AttackRange",
                     OperationType = ModifierOperationType.Add,
                     Value = _data.AttackRange
-                }
+                },
+                new StatModifierData()
+                {
+                    StatName = "MaxHp",
+                    OperationType = ModifierOperationType.Add,
+                    Value = _data.MaxHp
+                },
             };
 
             if (_friendData.MoveType == FriendMoveType.Chase)
@@ -355,14 +367,11 @@ public static class GameplayHandlers
 
             var _effectContext = new GameplayEffectContext()
             {
-                ActionContext = _context, Actor = _context.Actor, Target = _goActor
+                ActionContext = _context, Actor = _context.Actor, Target = _actor
             };
             var _effect = GetEffectHandler(_effectData.GetType()).InvokeDataHandler(_effectData, _effectContext);
 
-            GetEffectHandler(_effect.GetType()).InvokeExecuteHandler(_effect, _goActor);
-
-            // world에 추가합니다.
-            GameManager.Instance.world.AddActor(_goActor);
+            GetEffectHandler(_effect.GetType()).InvokeExecuteHandler(_effect, _actor);
         }
     }
 
@@ -370,7 +379,6 @@ public static class GameplayHandlers
     {
         public override void Invoke(PlayVfxOnActor _data, ActionSequenceContext _context)
         {
-            var _prefab = Resources.Load<GameObject>(_data.VfxAddress);
             float _scale = ExpressionEvaluator.Evaluate<float>(_data.Scale, _context);
             Quaternion _rotation = Quaternion.identity;
 
@@ -381,20 +389,51 @@ public static class GameplayHandlers
                     break;
                 case PlayVfxRotationType.ForwardToSkillPosition:
                     Vector3 _direction = (_context.Position - _context.Actor.Go.transform.position).normalized;
-                    float _angle = Mathf.Atan2(_direction.y, _direction.x) * Mathf.Rad2Deg;
-                    _rotation = Quaternion.AngleAxis(_angle, Vector3.forward);
+                    _rotation = EffectUtility.VectorToQuaternion2D(_direction);
                     break;
             }
 
-            var _go = Object.Instantiate(_prefab, _context.Actor.Go.transform.position, _rotation);
-            _go.transform.localScale = Vector3.one * _scale;
-            var _spineAnim = _go.GetComponentInChildren<SkeletonAnimation>();
-            UniTask.Create(async () =>
+            var _go = EffectUtility.Spawn(_data.VfxAddress, _context.Actor.Go.transform.position, _scale, _rotation);
+
+            var _pivotGo = _context.Actor.Go.DescendantsAndSelf().First(x => x.name == "HitPivot");
+            if (_pivotGo != null)
             {
-                await UniTask.WaitForSeconds(0.2f);
-                DOTween.To(() => _spineAnim.skeleton.A, value => { _spineAnim.skeleton.A = value; }, 0f, .1f)
-                    .OnComplete(() => Object.Destroy(_go));
-            }).Forget();
+                _go.transform.position = _pivotGo.transform.position;
+
+                if (_data.FollowPivot)
+                    _go.transform.SetParent(_pivotGo.transform);
+            }
+
+            EffectUtility.WaitAndDestroy(_go, _data.Duration);
+        }
+    }
+
+    public class PlayVfxOnTargetsActionHandler : ActionHandler<PlayVfxOnTargets>
+    {
+        public override void Invoke(PlayVfxOnTargets _data, ActionSequenceContext _context)
+        {
+            float _scale = ExpressionEvaluator.Evaluate<float>(_data.Scale, _context);
+            Quaternion _rotation = Quaternion.identity;
+
+            switch (_data.RotationType)
+            {
+                case PlayVfxRotationType.Identity:
+                    _rotation = Quaternion.identity;
+                    break;
+                case PlayVfxRotationType.ForwardToSkillPosition:
+                    Vector3 _direction = (_context.Position - _context.Actor.Go.transform.position).normalized;
+                    _rotation = EffectUtility.VectorToQuaternion2D(_direction);
+                    break;
+            }
+
+            _context.Targets.ForEach(x =>
+            {
+                var _go = EffectUtility.Spawn(_data.VfxAddress, x.Go.transform.position, _scale, _rotation);
+                var _damagePivotGo = x.Go.DescendantsAndSelf().FirstOrDefault(x => x.name == "DamagePivot");
+                if (_damagePivotGo != null)
+                    _go.transform.position = _damagePivotGo.transform.position;
+                EffectUtility.WaitAndDestroy(_go, _data.Duration);
+            });
         }
     }
 
@@ -405,7 +444,7 @@ public static class GameplayHandlers
             var _friends =
                 GameManager.Instance.world.Actors.Where(x => x.ActorType == ActorType.Friend).ToList();
             foreach (var x in _friends)
-                GameManager.Instance.world.DespawnActor(x);
+                GameManager.Instance.world.RemoveActor(x);
         }
     }
 
@@ -415,7 +454,7 @@ public static class GameplayHandlers
         {
             var _targets =
                 GetTargetMethodHandler(_data.TargetMethod.GetType()).Invoke(_data.TargetMethod, _context);
-            _context.Targets = _targets;
+            _context.SpecifiedTargets = _targets;
         }
     }
 
@@ -509,23 +548,11 @@ public static class GameplayHandlers
 
             if (_vfxOnApplicationPrefab != null)
             {
-                var _go = Object.Instantiate(
-                    _vfxOnApplicationPrefab,
-                    _target.Go.transform.position, Quaternion.identity);
+                var _go = EffectUtility.Spawn(
+                    _effect.Data.VfxOnApplicationAddress,
+                    _target.Go.transform.position, 1f, Quaternion.identity);
                 _go.transform.SetParent(_target.Go.transform);
-                _effect.OnRemoveAsObservable
-                    .Subscribe(_ =>
-                    {
-                        var _spineAnim = _go.GetComponentInChildren<SkeletonAnimation>();
-                        UniTask.Create(async () =>
-                        {
-                            await UniTask.WaitForSeconds(0.2f);
-                            DOTween.To(() => _spineAnim.skeleton.A, value => { _spineAnim.skeleton.A = value; }, 0f,
-                                    .1f)
-                                .OnComplete(() => Object.Destroy(_go));
-                        }).Forget();
-                    })
-                    .AddTo(_target.Go);
+                EffectUtility.WaitAndDestroy(_go, _effect.RemainingDuration);
             }
         }
 
@@ -630,8 +657,31 @@ public static class GameplayHandlers
 
     public class SelectedTargetMethodHandler : TargetMethodHandler<SelectedTargetMethod>
     {
+        // 현재 마우스 위치와 가장 가까운 플레이어를 타겟팅합니다.
         public override List<IGameActor> Invoke_Impl(SelectedTargetMethod _data, ActionSequenceContext _context)
-            => _context.Targets;
+        {
+            IGameActor target = null;
+            float lastDistance = float.MaxValue;
+            Vector2 mouseWorldPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+
+            // 스킬 사용시 공격범위 내에만 사용 가능하기에 조건 탐색을 하지않습니다.
+            GameManager.Instance.world.Actors
+                .Where(actor => actor.ActorType == ActorType.Monster)
+                .Select(actor => actor)
+                .ToList()
+                .ForEach(actor =>
+                {
+                    float distance = Vector2.Distance(actor.Go.transform.position, mouseWorldPosition);
+
+                    if (target == null || distance < lastDistance)
+                    {
+                        target = actor;
+                        lastDistance = distance;
+                    }
+                });
+
+            return new List<IGameActor>() { target };
+        }
     }
 
     public class RadiusTargetMethodHandler : TargetMethodHandler<RadiusRangeTargetMethod>
@@ -657,10 +707,13 @@ public static class GameplayHandlers
                 GameManager.Instance.world.Actors
                     .Where(x =>
                         x.ActorType == _targetType
-                        && Vector3.Distance(x.Go.transform.position, _position) <= _radius);
+                        && Vector3.Distance(x.Go.transform.position, _position) <= _radius)
+                    .ToList();
+
+            DebugUtility.DrawCircle(_position, _radius, _actors.Count > 0 ? Color.red : Color.green, 0.5f);
 
             if (_maxCount < 0)
-                return _actors.ToList();
+                return _actors;
 
             return _actors.Take(_maxCount).ToList();
         }
@@ -679,17 +732,21 @@ public static class GameplayHandlers
             float _length = 10f;
             Vector3 _direction = (_context.Position - _context.Actor.Go.transform.position).normalized;
             float _angleRad = Mathf.Atan2(_direction.y, _direction.x);
-            Vector2 _center = new Vector2(Mathf.Cos(_angleRad) * _length / 2, Mathf.Sin(_angleRad) * _length / 2);
-            Vector2 _size = new Vector2(_length, 1);
+            Vector2 _center = new Vector2(Mathf.Cos(_angleRad) * _length / 2, Mathf.Sin(_angleRad) * _length / 2) +
+                              (Vector2)_context.Actor.Go.transform.position;
+            Vector2 _size = new Vector2(_length, _thickness);
 
             var _colliders = Physics2D.OverlapBoxAll(_center, _size, _angleRad * Mathf.Rad2Deg);
             var _actors =
                 _colliders
                     .Select(x => x.GetComponent<IGameActor>())
-                    .Where(x => x != null && x.ActorType == _targetType);
+                    .Where(x => x != null && x.ActorType == _targetType)
+                    .ToList();
+            DebugUtility.DebugDrawBox(_center, _size, _angleRad * Mathf.Rad2Deg,
+                _actors.Count > 0 ? Color.red : Color.green, 0.5f);
 
             if (_maxCount < 0)
-                return _actors.ToList();
+                return _actors;
 
             return _actors.Take(_maxCount).ToList();
         }

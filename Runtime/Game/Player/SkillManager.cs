@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -10,6 +11,17 @@ public class SkillManager : MonoBehaviour
     public int? NextSkillId { get; private set; }
     public float NextSkillCooldown;
 
+    private bool isInit;
+
+    private IEnumerator Start()
+    {
+        yield return null;
+        yield return null;
+        yield return null;
+
+        Initialize();
+    }
+
     public void Initialize()
     {
         SkillSlotIds = new() { RandCanUseSkillID(), RandCanUseSkillID(), RandCanUseSkillID(), RandCanUseSkillID() };
@@ -18,6 +30,11 @@ public class SkillManager : MonoBehaviour
 
     private void Update()
     {
+        if (SkillSlotIds == null)
+        {
+            return;
+        }
+
         if (NextSkillCooldown > 0)
         {
             NextSkillCooldown -= Time.deltaTime;
@@ -41,8 +58,8 @@ public class SkillManager : MonoBehaviour
     private int RandCanUseSkillID()
     {
         var _skillsCanUse =
-            GameManager.Instance.skillTreeManager.CurCardStates.Where(x => x.count > 0).ToList();
-        return _skillsCanUse.Random().id;
+            GameManager.Instance.userDataManager.userData.SkillsInUseList.Where(x => DataTable.ActiveSkillDataTable.ContainsKey(x)).ToList();
+        return _skillsCanUse.Random();
     }
 
     public void ReFillNextSkill()
@@ -54,23 +71,22 @@ public class SkillManager : MonoBehaviour
 
     public void UseSkill(int _slotIndex, Vector3 _targetPosition)
     {
-        int _legacyId = SkillSlotIds[_slotIndex].Value;
-        int _id = _legacyId + 1001; // temp: 임시적으로 구버전 체계의 id에 1001을 더해 신버전 체계의 id로 바꿉니다.
+        int _id = SkillSlotIds[_slotIndex].Value;
         var _skillData = DataTable.ActiveSkillDataTable[_id];
 
-        if (GameManager.Instance.playerScript.Stats["Mana"].CurrentValueInt < _skillData.Cost)
+        if (GameManager.Instance.playerScript.Stats["Mp"].CurrentValueInt < _skillData.Cost)
         {
             GameManager.Instance.commonUI.ToastMessage("마나가 부족합니다.");
             return;
         }
 
-        int _level = GameManager.Instance.skillTreeManager.CurCardStates[_legacyId].level;
+        int _level = GameManager.Instance.userDataManager.userData.SkillDict[_id].Level;
         var _player = GameManager.Instance.playerScript;
 
         _player.SkillController.Perform(
             _player, _skillData, _level, _targetPosition);
 
-        GameManager.Instance.playerScript.Stats["Mana"].ApplyModifier(new StatModifier() { Magnitude = -_skillData.Cost });
+        GameManager.Instance.playerScript.Stats["Mp"].ApplyModifier(new StatModifier() { Magnitude = -_skillData.Cost });
 
         OnSkillsCanUseNumsChanged?.Invoke();
         SkillSlotIds.RemoveAt(_slotIndex);

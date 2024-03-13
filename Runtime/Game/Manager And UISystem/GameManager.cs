@@ -19,7 +19,6 @@ public class GameManager : MonoBehaviour
     public SkillManager skillManager;
     public AppearTextManager appearTextManager;
     public AcquireMessageUI acquireMessageUI;
-    public SkillTreeManager skillTreeManager;
     private ResourceManager resourceManager;
     public GameplayWorld world;
 

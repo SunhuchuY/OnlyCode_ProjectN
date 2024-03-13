@@ -1,69 +1,78 @@
 using System.Linq;
 using Unity.Linq;
 using UnityEngine;
+using BackEnd.Rank;
+
 
 public class RankingPanelUI : MonoBehaviour
 {
     public RankingPanelAccessor accessor;
-    private RankingUIAccessor template;
+
+    private void Awake()
+    {
+        accessor.ExitButton.onClick.AddListener(OnClickExitButton);
+    }
 
     private void Start()
     {
-        if (BackEnd.Backend.IsLogin)
+        if (!BackEnd.Backend.IsLogin)
         {
-            template = GetTemplate();
-            CreateRankingAllUI();
-        }
-
-        accessor.ExitButton.onClick.AddListener(() => 
-        {
-            accessor.gameObject.SetActive(false);   
-        });
-    }
-
-    private void CreateRankingAllUI()
-    {
-        var rankList = BackEnd.Rank.Rank.GetRankList().OrderBy(x => x.ranking).ToList();
-        var myRank = BackEnd.Rank.Rank.GetMyRank();
-
-        InstantiateRankingUI(myRank);
-
-        rankList.Where(rankItem => rankItem != null)
-            .ToList()
-            .ForEach(rankItem => InstantiateRankingUI(rankItem));
-    }
-
-    private RankingUIAccessor GetTemplate()
-    {
-        var result = accessor.ContentsParent.GetChild(0).GetComponent<RankingUIAccessor>();
+            return;
+        }        
 
         ContentsClear();
-        return result;
+        UpdateRankingAllUI();
+    }
+
+    private void UpdateRankingAllUI()
+    {
+        var rankList = Rank.GetRankList()
+            .OrderBy(x => x.ranking)
+            .ToList();
+        int contentChildCount = accessor.ContentsParent.childCount;
+
+        rankList
+            .ForEach(rankItem =>
+            {
+                int rankUIIndex = rankItem.ranking;
+
+                // 수정, 생성중 선택합니다.
+                RankingUIAccessor rankingUIAccessor = rankUIIndex < contentChildCount
+                    ? accessor.transform.GetChild(rankUIIndex).GetComponent<RankingUIAccessor>()
+                    : Instantiate(accessor.Template, accessor.ContentsParent).GetComponent<RankingUIAccessor>();
+
+                InsertRankingUI(rankingUIAccessor, rankItem);
+            });
+
+        InsertRankingUI(accessor.MyRankUIAccessor, Rank.GetMyRank());
     }
 
     private void ContentsClear()
     {
-        accessor.ContentsParent.gameObject.Descendants().Destroy();
+        accessor.ContentsParent.gameObject
+            .Descendants()
+            .Destroy();
     }
 
-    private void InstantiateRankingUI(BackEnd.Rank.RankItem rankItem)
+    private void InsertRankingUI(RankingUIAccessor accessor, RankItem rankItem)
     {
-        RankingUIAccessor temp = Instantiate(template, accessor.ContentsParent).GetComponent<RankingUIAccessor>();
-        InitRankingUI(temp, rankItem);
-    }
-
-    private void InitRankingUI(RankingUIAccessor accessor, BackEnd.Rank.RankItem rankItem)
-    {
-        accessor.GetComponents<Behaviour>().ToList().ForEach(comp => comp.enabled = true);
-
-        accessor.gameObject.Descendants().ToList().ForEach(go =>
+        // 3위안으로는 텍스트 대신 이미지를 사용합니다.
+        if (rankItem.ranking <= 3) 
         {
-            var comp = go.GetComponent<Behaviour>();
-            comp.enabled = true;
-        });
+            accessor.RankingImage.sprite = this.accessor.SpriteAtlas.GetSprite($"ui_icon_ranking_{rankItem.ranking}");
+            accessor.RankingText.gameObject.SetActive(false);
+        }
+        else
+        {
+            accessor.RankingText.text = $"{rankItem.ranking}";
+            accessor.RankingImage.gameObject.SetActive(false);
+        }
 
-        accessor.RankingText.text = $"{rankItem.ranking}";  
         accessor.NickNameText.text = $"{rankItem.userName}";
         accessor.MaxDamageText.text = $"{CurrencyHelper.ToCurrencyString(rankItem.score)}";
+    }
+    private void OnClickExitButton() 
+    {
+        accessor.gameObject.SetActive(false);
     }
 }

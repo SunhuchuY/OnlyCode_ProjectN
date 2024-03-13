@@ -4,6 +4,7 @@ using UnityEngine;
 public class RangedAbilityNone : BaseRangedAbility
 {
     float Speed;
+    BulletOfMonster bullet;
 
     public void ParameterInitialize(float speed)
     {
@@ -19,15 +20,15 @@ public class RangedAbilityNone : BaseRangedAbility
             return;
         }
 
-        Vector2 targetPos = Owner.detector.GetCurrentTargetTransform().position;
-        Vector2 bulletDirection = (targetPos - (Vector2)Owner.transform.position).normalized;
+        Vector2 targetPos = Owner.detector.GetCurrentTargetActor().Go.transform.position;
+        Vector2 bulletDirection = (targetPos - (Vector2)FireTf.position).normalized;
         float angle = Mathf.Atan2(bulletDirection.y, bulletDirection.x) * Mathf.Rad2Deg;
-        BulletOfMonster bullet = BulletsObjectPool.Instance.GetGO(PrefabName).GetComponent<BulletOfMonster>();
+        bullet = BulletsObjectPool.Instance.GetGO(PrefabName).GetComponent<BulletOfMonster>();
         
         bullet.transform.position = FireTf.transform.position;
         bullet.transform.rotation = Quaternion.Euler(new Vector3(0, 0, angle));
         
-        bullet.Initialize((int)Owner.attributes.ATK.Value);
+        bullet.Initialize((int)Owner.Stats["Attack"].CurrentValue);
         bullet.rb.velocity = bulletDirection * Speed;
     }
 }

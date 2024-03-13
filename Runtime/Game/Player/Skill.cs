@@ -81,8 +81,8 @@ public class Skill : MonoBehaviour
             switch (skillNumber)
             {
                 case 1:
-                    level = GameManager.Instance.skillTreeManager.CurCardStates[skillNumber].level;
-                    debuff = GameManager.Instance.skillTreeManager.CardDataContainer.cards[skillNumber].DebuffAmount(level);
+                    // level = GameManager.Instance.skillTreeManager.CurCardStates[skillNumber].level;
+                    // debuff = GameManager.Instance.skillTreeManager.CardDataContainer.cards[skillNumber].DebuffAmount(level);
                     //collision_MonsterScript.MoveSpeedDown(debuff, DestroyDelayTime);
                     break;
 

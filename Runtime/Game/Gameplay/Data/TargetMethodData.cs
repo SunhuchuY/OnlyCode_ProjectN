@@ -1,4 +1,9 @@
 using System.Collections.Generic;
+using System.Linq;
+using System.Numerics;
+using UnityEngine;
+
+using Vector2 = UnityEngine.Vector2;
 
 public enum PositionType
 {
@@ -16,7 +21,7 @@ public class SpecificTargetMethod : TargetMethodData
     public List<IGameActor> Targets { get; set; } = new();
 }
 
-// 가장 마지막으로 지정된 대상을 다시 지정하는 방법입니다.
+// 현재 마우스 위치와 가장 가까운 플레이어를 타겟팅합니다.
 public class SelectedTargetMethod : TargetMethodData
 {
 }

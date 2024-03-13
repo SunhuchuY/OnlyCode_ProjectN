@@ -1,3 +1,4 @@
+using UniRx;
 using UnityEngine;
 
 public class ResurrectEvent : MonoBehaviour
@@ -11,12 +12,14 @@ public class ResurrectEvent : MonoBehaviour
 
     void Start()
     {
-        Owner.attributes.HP.OnCurrentValueIsZero += Resurrect;
+        Owner.Stats["Hp"].OnChangesCurrentValueIntAsObservable
+            .Where(x => x <= 0)
+            .Subscribe(_ => Resurrect());
     }
 
     void Resurrect()
     {
-        Owner.attributes.HP.Initialize();
+        Owner.Stats["Hp"].Initialize();
         Owner.Resets();
     }
 }

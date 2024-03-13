@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class PlayerAnimationKeyframeEventReceiver : MonoBehaviour
+public class AnimKeyframeEventReceiver : MonoBehaviour
 {
     public event System.Action OnAttackEvent;
     public event System.Action OnDeadEvent;

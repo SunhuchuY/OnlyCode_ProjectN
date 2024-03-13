@@ -1,84 +1,52 @@
+using Cysharp.Threading.Tasks;
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using UniRx;
+using UniRx.Triggers;
 using UnityEngine;
 
 public class EnemyTargetDetector : MonoBehaviour
 {
     public Monster Owner;
-    Transform currentTarget;
+    private IGameActor curTargetActor;
 
-    void Start()
+    private void Start()
     {
         StartCoroutine(DelayFindTarget());
     }
 
-    IEnumerator DelayFindTarget()
+    private IEnumerator DelayFindTarget()
     {
         while (true)
         {
             FindTarget();
-            yield return new WaitForSeconds(2);
+            yield return new WaitForSeconds(1);
         }
     }
 
-    void FindTarget()
+    private void FindTarget()
     {
-        Collider2D[] targets = Physics2D.OverlapCircleAll(transform.position, Owner.attributes.Detection, 1 << LayerMask.GetMask("Actor"));
-        Transform closestTarget = null;
-        float closestDistance = float.MaxValue;
+        // 몬스터를 제외한 대상을 탐색합니다.
+        IGameActor friendActor = GameManager.Instance.world.Actors
+            .Where(actor => actor.ActorType == ActorType.Friend
+                && Vector2.Distance(transform.position, actor.Go.transform.position) < Owner.Stats["AttackRange"].CurrentValue)
+            .OrderBy(actor => Vector2.Distance(transform.position, actor.Go.transform.position))
+            .FirstOrDefault();
 
-        foreach (var target in targets)
-        {
-            if (target.CompareTag("Friend"))
-            {
-                float distance = Vector2.Distance(transform.position, target.transform.position);
-                if (distance < closestDistance)
-                {
-                    closestTarget = target.transform;
-                    closestDistance = distance;
-                }
-            }
-        }
-
-        currentTarget = closestTarget != null ? closestTarget : GameManager.Instance.player.transform;
+        curTargetActor = friendActor == null 
+            ? GameManager.Instance.playerScript 
+            : friendActor;
     }
 
-    public Transform GetCurrentTargetTransform()
+    public IGameActor GetCurrentTargetActor()
     {
-        if (currentTarget == null)
+        if (!GameManager.Instance.world.Actors.Contains(curTargetActor)) 
         {
             FindTarget();
         }
 
-        return currentTarget;
-    }
-
-    public Collider2D GetCurrentTargetCollider()
-    {
-        if (currentTarget == null)
-        {
-            Debug.LogError("현재 target이 null입니다.");
-        }
-
-        Collider2D col = null;
-        col = currentTarget.GetComponent<Collider2D>();
-        if (col == null && currentTarget.parent != null)
-        {
-            col = currentTarget.parent.GetComponent<Collider2D>();
-        }
-
-        if (col == null)
-        {
-            Debug.LogError("Collider2D not found on object or its parent.");
-        }
-
-        return col;
-    }
-
-    void OnDrawGizmos()
-    {
-        // 탐지 범위를 시각화하기 위한 Gizmos
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(transform.position, Owner.attributes.Detection);
-    }
+        return curTargetActor;
+    }   
 }

@@ -31,9 +31,11 @@ public class AppearTextManager : MonoBehaviour
     {
         var ac = objectPool.Get();
 
+        text = text.Replace("+", "").Replace("-", "");
+
         Sequence sequence = DOTween.Sequence();
         sequence.Join(ac.Text.DOFade(0f, 1f).From(1f));
-        sequence.Join(ac.transform.DOMoveY(startPos.y + 1.5f, 1f).From(startPos.y + 0.5f).SetEase(Ease.InQuad));
+        sequence.Join(ac.transform.DOMoveY(startPos.y + 4f, 1f).From(startPos.y + 0.5f).SetEase(Ease.InQuad));
 
         sequence.OnStart(() =>
         {
@@ -54,9 +56,11 @@ public class AppearTextManager : MonoBehaviour
     {
         var ac = objectPool.Get();
 
+        text = text.Replace("+", "").Replace("-", "");
+
         Sequence sequence = DOTween.Sequence();
         sequence.Join(ac.Text.DOFade(0f, 1f).From(1f));
-        sequence.Join(ac.transform.DOMoveY(startPos.y + 1.5f, 1f).From(startPos.y + 0.5f).SetEase(Ease.InQuad)); 
+        sequence.Join(ac.transform.DOMoveY(startPos.y + 4f, 1f).From(startPos.y + 0.5f).SetEase(Ease.InQuad)); 
 
         sequence.OnStart(() =>
         {

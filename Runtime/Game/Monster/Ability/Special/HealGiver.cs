@@ -17,7 +17,7 @@ public class HealGiver : MonoBehaviour
                 Monster mon = tar.GetComponent<Monster>();
                 StatModifier modifier = new StatModifier();
                 modifier.Magnitude = healAmount;
-                mon.attributes.HP.ApplyModifier(modifier);
+                mon.Stats["Hp"].ApplyModifier(modifier);
             }
         }
     }

@@ -4,43 +4,33 @@ using UnityEngine;
 
 public class DotDamageReceiver : MonoBehaviour
 {
+    IGameActor gameActor; 
+
     public void ApplyDotDamage(float duration, float interval, int damage)
     {
-        Collider2D col = GetComponent<Collider2D>();
-        Action Dot = null;
-
-        if (col.CompareTag("Player"))
-        {
-            Dot = (() => 
-            {
-                GameManager.Instance.playerScript.ApplyDamage(damage);
-            });
-        }
-        else if (col.CompareTag("friend"))
-        {
-            // TODO: Friend 대상들에게 도트데미지 효과를 입히세요.
-        }
-
-        if (Dot == null)
-        {
-            Debug.LogError("도트데미지를 입히는 함수가 레퍼런싱 되지 않았습니다.");
-
-        }
-
-        StartCoroutine(DotDamage(duration, interval, Dot));
+        gameActor = GetComponent<IGameActor>();
+        StartCoroutine(DotDamage(duration, interval, damage));
     }
 
-    IEnumerator DotDamage(float duration, float interval, Action Dot)
+    IEnumerator DotDamage(float duration, float interval, int damage)
     {
         float timePassed = 0;
 
         while (timePassed < duration)
         {
-            Dot();
+            Dot(damage);
             yield return new WaitForSeconds(interval);
             timePassed += interval;
         }
 
         Destroy(this);
+    }
+
+    private void Dot(int damage)
+    {
+        gameActor.Stats["Hp"].ApplyModifier(
+            new Damage { Magnitude = -damage } );
+
+        GameManager.Instance.objectPoolManager.PlayParticle("Prefab/Particle/21", gameActor.Go.transform.position);
     }
 }

@@ -9,6 +9,7 @@ public class Stat
     public ReactiveProperty<float> Cap = new(-1);
     public float CurrentValue => m_CurrentValue;
     public int CurrentValueInt => m_CurrentValueInt;
+    public Func<IStatModifier, IStatModifier> OnBeforeApplyModifierDelegate;
     public IObservable<float> OnChangesCurrentValueAsObservable => m_OnChangesCurrentValueSubject;
     public IObservable<int> OnChangesCurrentValueIntAsObservable => m_OnChangesCurrentValueIntSubject;
 
@@ -28,7 +29,10 @@ public class Stat
     {
         // 덧셈 > 곱셈 순서로 계산합니다.
         // note: stat은 override 타입의 modifier를 적용받지 않습니다.
-        m_Modifiers.Add(_modifier);
+
+        IStatModifier _newModifier = OnBeforeApplyModifierDelegate?.Invoke(_modifier) ?? _modifier;
+
+        m_Modifiers.Add(_newModifier);
         m_Modifiers = m_Modifiers.OrderBy(x => x.OperationType).ToList();
 
         CalculateValue();
@@ -96,23 +100,24 @@ public class Attribute : Stat
     {
         float _newValue = m_CurrentValue;
 
-        switch (_modifier.OperationType)
+        IStatModifier _newModifier = OnBeforeApplyModifierDelegate?.Invoke(_modifier) ?? _modifier;
+
+        switch (_newModifier.OperationType)
         {
             case ModifierOperationType.Add:
-                _newValue += _modifier.Magnitude;
+                _newValue += _newModifier.Magnitude;
                 break;
             case ModifierOperationType.Multiply:
-                _newValue *= _modifier.Magnitude;
+                _newValue *= _newModifier.Magnitude;
                 break;
             case ModifierOperationType.Override:
-                _newValue = _modifier.Magnitude;
+                _newValue = _newModifier.Magnitude;
                 break;
         }
 
-        if (OnCurrentValueIsZeroOrLess != null && Cap.Value > 0 && _newValue <= 0)
+        if (Cap.Value > 0 && _newValue <= 0)
         {
-            // ex: 300 - (-10)
-            OnCurrentValueIsZeroOrLess.Invoke(Cap.Value - _newValue);
+            OnCurrentValueIsZeroOrLess?.Invoke(Cap.Value - _newValue);
         }
 
         if (Cap.Value > 0)

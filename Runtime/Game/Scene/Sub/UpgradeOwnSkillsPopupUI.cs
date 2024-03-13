@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UniRx;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.U2D;
 
@@ -83,25 +84,26 @@ public class UpgradeOwnSkillsPopupUI : MonoBehaviour
             if (selectSkillData == null || selectSlotID < 0 
                 || selectSlotID >= GameManager.Instance.userDataManager.userData.SkillsInUseList.Count)
             {
+                GameManager.Instance.commonUI.ToastMessage("스킬이 선택되지 않았습니다.");
                 return;
             }
 
             if (GameManager.Instance.userDataManager.userData.SkillsInUseList.Contains(selectSkillData.Id))
             {
                 GameManager.Instance.commonUI.ToastMessage("이미 등록 되어 있는 스킬입니다.");
+                return;
             }
-            else
-            {
-                GameManager.Instance.userDataManager.userData.SkillsInUseList[selectSlotID] = selectSkillData.Id;
-                accessor.gameObject.SetActive(false);
-            }
-
+            
+            GameManager.Instance.userDataManager.userData.SkillsInUseList[selectSlotID] = selectSkillData.Id;
+            accessor.gameObject.SetActive(false);
+            GameManager.Instance.commonUI.ToastMessage("스킬이 정상적으로 등록되셨습니다!");
         });
 
         accessor.skillUpgradePopup.LevelUpButton.onClick.AddListener(() =>
         {
             if (selectSkillData == null)
             {
+                GameManager.Instance.commonUI.ToastMessage("스킬을 선택하지 않으셨습니다.");
                 return;
             }
 
@@ -109,9 +111,20 @@ public class UpgradeOwnSkillsPopupUI : MonoBehaviour
             int needOfGold = PlayerTapParser.Instance.levelOfSkill[savedData.Level].NeedOfGold;
             int needOfSkillFragments = PlayerTapParser.Instance.levelOfSkill[savedData.Level].NeedOfSkillFragments;
 
+            if (savedData.Count < needOfSkillFragments)
+            {
+                GameManager.Instance.commonUI.ToastMessage("스킬 개수가 부족합니다.");
+                return;
+            }
+
+            if (GameManager.Instance.userDataManager.userData.Gold < needOfGold)
+            {
+                GameManager.Instance.commonUI.ToastMessage("골드량이 부족합니다.");
+                return;
+            }
+
             GameManager.Instance.userDataManager.ModifierCurrencyValue(CurrencyType.Gold, -needOfGold);
             savedData.Count -= needOfSkillFragments;
-
             savedData.Level++;
 
             SelectUpgradeSkillUI(selectSkillData); // 변경사항을 새롭게 업데이트합니다.
@@ -159,7 +172,6 @@ public class UpgradeOwnSkillsPopupUI : MonoBehaviour
             : $"<color=red>{CurrencyHelper.ToCurrencyString(PlayerTapParser.Instance.levelOfSkill[savedData.Level].NeedOfGold)}</color>";
 
         bool isLevelUp = isSkillCount && isGold && !isMaxLevel;
-        accessor.skillUpgradePopup.LevelUpButton.enabled = isLevelUp;
         accessor.skillUpgradePopup.LevelUpButton.image.color = isLevelUp ? Color.white : Color.gray;
         accessor.skillUpgradePopup.LevelUpText.color = isLevelUp ? Color.white : Color.red;
     }

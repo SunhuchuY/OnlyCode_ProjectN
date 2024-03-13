@@ -1,4 +1,7 @@
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using UniRx;
 using UnityEngine;
 
 using Vector2 = UnityEngine.Vector2;
@@ -122,10 +125,10 @@ public class WaveManager : MonoBehaviour
 
     private Monster SpawnMonster(int _id)
     {
-        GameObject _monsterGo = MonstersObjectPool.Instance.GetGO(_id);
-        _monsterGo.transform.position = GetRandomSpawnPoint();
+        var _actor = GameManager.Instance.world.SpawnActor(StageParser.Instance.monsterProfiles[_id]);
+        _actor.Go.transform.position = GetRandomSpawnPoint();
 
-        var _monster = _monsterGo.GetComponent<Monster>();
+        var _monster = _actor as Monster;
         // 몬스터가 죽었을 때 wave index 갱신을 시도합니다.
         _monster.keyframeEventReceiver.OnDeadEvent -= UpdateDeadMonster;
         _monster.keyframeEventReceiver.OnDeadEvent += UpdateDeadMonster;
@@ -161,13 +164,38 @@ public class WaveManager : MonoBehaviour
 
     public void Restart()
     {
+        // 출현한 모든 몬스터를 삭제합니다.
+        GameManager.Instance.world.Actors
+            .Where(actor => actor.ActorType == ActorType.Monster)
+            .Select(actor => actor)
+            .ToList()
+            .ForEach(actor => Destroy(actor.Go));
+
         // 플레이어가 죽어서 재시작될 때에는 wave index를 big wave가 시작될 때의 index로 초기화합니다.
         GameManager.Instance.userDataManager.userData.Wave = StageParser.Instance.bigWaveProfiles[GameManager.Instance.userDataManager.userData.BigWave].WaveFrom;
-        MonstersObjectPool.Instance.ActiveAllRelease();
         KillCountInCurrentWave = 0;
         spawnCountInCurrentWave = 0;
         StartNextWave();
         OnWaveIndexChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// 스탯이 모두 초기화 되어야 하기 떄문에 두 프레임을 쉬고 넣습니다.
+    /// </summary>
+    /// <returns></returns>
+    private IEnumerator AddRankBoss_OnCurrentValueIsZeroOrLess(Monster boss) 
+    {
+        yield return null;
+        yield return null;
+
+        if (BackEnd.Backend.IsLogin)
+        {
+            Attribute hp = boss.Stats["Hp"] as Attribute;
+            hp.OnCurrentValueIsZeroOrLess += currentValue =>
+            {
+                BackEnd.Rank.Rank.AddValueMyRank(boss.Stats["Hp"].Cap.Value - currentValue);
+            };
+        }
     }
 
     private IEnumerator StartBossWaveCoroutine()
@@ -183,12 +211,7 @@ public class WaveManager : MonoBehaviour
             MonsterIDs[StageParser.Instance.bigWaveProfiles[GameManager.Instance.userDataManager.userData.BigWave].MonsterIDs.Count - 1];
         
         Monster boss = SpawnMonster(_id);
-        
-        if (BackEnd.Backend.IsLogin)
-        {
-            boss.attributes.HP.OnCurrentValueIsZeroOrLess -= BackEnd.Rank.Rank.AddValueMyRank;
-            boss.attributes.HP.OnCurrentValueIsZeroOrLess += BackEnd.Rank.Rank.AddValueMyRank;
-        }
+        StartCoroutine(AddRankBoss_OnCurrentValueIsZeroOrLess(boss));
     }
 
     private IEnumerator StartNormalWaveCoroutine()

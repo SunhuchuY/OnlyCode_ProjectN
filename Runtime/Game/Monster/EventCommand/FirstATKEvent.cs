@@ -6,6 +6,7 @@ public class FirstATKEvent : IEventCommand<BigInteger>
     private bool isFirst = false;
     public Monster Owner { get; private set; }
     public BigInteger Add { get; private set; }
+    private StatModifier modifier;
 
     public FirstATKEvent(Monster owner, EventCommand command)
     {
@@ -19,12 +20,14 @@ public class FirstATKEvent : IEventCommand<BigInteger>
         {
             // 첫 번째 공격은 한 상황이므로, 이벤트를 제거합니다.
 
-            Owner.attributes.ATK.RemoveModifier(Add);
-            Owner.PassiveEvent -= this.Event;
+            Owner.Stats["Attack"].RemoveModifier(modifier);
+            Owner.OnPassiveEvent -= this.Event;
             return;
         }
 
-        Owner.attributes.ATK.AddModifier(Add);
+        modifier = new StatModifier() { Magnitude = (float)Add };
+        Owner.Stats["Attack"].ApplyModifier(modifier);
+        GameManager.Instance.objectPoolManager.PlayParticle("Prefab/Particle/22", Owner.detector.GetCurrentTargetActor().Go.transform.position);
         isFirst = true;
     }
 }

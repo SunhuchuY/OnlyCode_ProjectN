@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using UnityEngine;
 
@@ -13,6 +14,7 @@ public class PlayerTapParser : MonoBehaviour
     public Dictionary<int, PlayerSkillLevelData> levelOfSkill { get; private set; }
     public int MAX_LEVEL_PLAYER { get; private set; }
     public int MAX_LEVEL_SKILL { get; private set; }
+    public float MAX_STAT_ATTACK_RANGE { get; private set; }
 
     private void Awake()
     {
@@ -23,12 +25,21 @@ public class PlayerTapParser : MonoBehaviour
 
         LoadData();
         InitMaxLevel();
+        InitMaxStat();
     }
 
     private void InitMaxLevel()
     {
         MAX_LEVEL_PLAYER = levelOfPlayer.Count;
-        MAX_LEVEL_SKILL = levelOfSkill.Count;   
+        MAX_LEVEL_SKILL = levelOfSkill.Count;
+    }
+
+    private void InitMaxStat()
+    {
+        MAX_STAT_ATTACK_RANGE = attack
+                    .Where(x => x.Value.AttackDistance.PayMagicStone == 0)
+                    .Select(x => x.Value.AttackDistance.Value)
+                    .FirstOrDefault();
     }
 
     private void LoadData()

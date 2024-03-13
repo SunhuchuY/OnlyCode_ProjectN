@@ -31,15 +31,5 @@ public class ArrowScript : MonoBehaviour
 
     private void OnTriggerStay2D(Collider2D collision)
     {
-        if (collision.CompareTag("Player") )
-        {
-            if (collision.GetComponent<Player>() != null)
-                GameManager.Instance.playerScript.ApplyDamage(damage - shieldAmount);
-            else if (collision.GetComponent<Friend>() != null)
-                collision.GetComponent<Friend>().GetDamage(damage - shieldAmount);
-            
-            Destroy(gameObject);
-
-        }
     }
 }

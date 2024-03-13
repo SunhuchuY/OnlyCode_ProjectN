@@ -14,15 +14,18 @@ public class HitFrameObject : MonoBehaviour
     private void Start()
     {
         var _spineAnim = GetComponentInChildren<SkeletonAnimation>();
-        _spineAnim.AnimationState.Complete += _ =>
+        if(_spineAnim != null)
         {
-            UniTask.Create(async () =>
+            _spineAnim.AnimationState.Complete += _ =>
             {
-                await UniTask.WaitForSeconds(0.2f);
-                DOTween.To(() => _spineAnim.skeleton.A, value => { _spineAnim.skeleton.A = value; }, 0f, .1f)
-                    .OnComplete(() => Destroy(gameObject));
-            }).Forget();
-        };
+                UniTask.Create(async () =>
+                {
+                    await UniTask.WaitForSeconds(0.2f);
+                    DOTween.To(() => _spineAnim.skeleton.A, value => { _spineAnim.skeleton.A = value; }, 0f, .1f)
+                        .OnComplete(() => Destroy(gameObject));
+                }).Forget();
+            };
+        }
     }
 
     private void Update()

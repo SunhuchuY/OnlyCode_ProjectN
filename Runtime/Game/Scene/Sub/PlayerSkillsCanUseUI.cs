@@ -68,17 +68,17 @@ public class PlayerSkillsCanUseUI : MonoBehaviour
         }
         else
         {
-            var _card = GameManager.Instance.skillTreeManager.CardDataContainer.cards[_skillId.Value];
+            var _card = DataTable.ActiveSkillDataTable[_skillId.Value];
             _accessor.Icon.sprite =
-                GameManager.Instance.skillTreeManager.CardDataContainer.cards[_skillId.Value].cardSprite;
+                Resources.Load<Sprite>($"Sprite/Icon/Skill/{_card.Name}");
             _accessor.CostText.text =
-                GameManager.Instance.skillTreeManager.CardDataContainer.cards[_skillId.Value].cardCost.ToString();
+                _card.Cost.ToString();
             _accessor.LevelRoundImage.sprite =
                 Resources.Load<Sprite>(
-                    $"Sprite/UI/SkillLevelRound/skill_round_{_card.cardRate.ToString().ToLower()}");
+                    $"Sprite/UI/SkillLevelRound/skill_round_{_card.Grade.ToString().ToLower()}");
             _accessor.SkillCostImage.sprite =
                 Resources.Load<Sprite>(
-                    $"Sprite/UI/SkillCostRound/skill_cost_{_card.cardRate.ToString().ToLower()}");
+                    $"Sprite/UI/SkillCostRound/skill_cost_{_card.Grade.ToString().ToLower()}");
         }
     }
 
@@ -91,18 +91,20 @@ public class PlayerSkillsCanUseUI : MonoBehaviour
         }
         else
         {
-            var _card = GameManager.Instance.skillTreeManager.CardDataContainer.cards[_skillId.Value];
+            var _card = DataTable.ActiveSkillDataTable[_skillId.Value];
             _accessor.Icon.sprite =
-                GameManager.Instance.skillTreeManager.CardDataContainer.cards[_skillId.Value].cardSprite;
+                Resources.Load<Sprite>($"Sprite/Icon/Skill/{_card.Name}");
             _accessor.CostText.text =
-                GameManager.Instance.skillTreeManager.CardDataContainer.cards[_skillId.Value].cardCost.ToString();
+                _card.Cost.ToString();
             _accessor.LevelRoundImage.sprite =
                 Resources.Load<Sprite>(
-                    $"Sprite/UI/SkillLevelRound/skill_round_{_card.cardRate.ToString().ToLower()}");
+                    $"Sprite/UI/SkillLevelRound/skill_round_{_card.Grade.ToString().ToLower()}");
             _accessor.SkillCostImage.sprite =
                 Resources.Load<Sprite>(
-                    $"Sprite/UI/SkillCostRound/skill_cost_{_card.cardRate.ToString().ToLower()}");
-            _accessor.LeftTimeText.text = Convert.ToInt32(SkillManager.NextSkillCooldown).ToString();
+                    $"Sprite/UI/SkillCostRound/skill_cost_{_card.Grade.ToString().ToLower()}");
+
+            int nextSkillCoolDown = Convert.ToInt32(SkillManager.NextSkillCooldown);
+            _accessor.LeftTimeText.text = nextSkillCoolDown == 0 ? string.Empty : nextSkillCoolDown.ToString();
         }
     }
 }

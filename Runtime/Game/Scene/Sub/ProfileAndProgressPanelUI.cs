@@ -15,10 +15,6 @@ public class ProfileAndProgressPanelUI : MonoBehaviour
 
     private void Start()
     {
-        //GameManager.Instance.userDataManager.userData
-        //    .ObserveEveryValueChanged(x => x.UserName)
-        //    .Subscribe(_ => UpdateUsername())
-        //    .AddTo(gameObject);
         GameManager.Instance.userDataManager.userData
             .ObserveEveryValueChanged(x => x.CurrentLevel)
             .Subscribe(_ => UpdateCurrentLevel())
@@ -39,7 +35,10 @@ public class ProfileAndProgressPanelUI : MonoBehaviour
 
     private void UpdateUsername()
     {
-        //accessor.UsernameText.text = GameManager.Instance.userDataManager.userData.UserName;
+        if (GameManager.Instance.userDataManager.backendConnected)
+        {
+            accessor.UsernameText.text = BackEnd.Backend.UserNickName;
+        }
     }
 
     private void UpdateCurrentLevel()

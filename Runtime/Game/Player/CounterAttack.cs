@@ -2,25 +2,37 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using DG.Tweening;
+using UniRx;
 using System.Linq;
 
 public class CounterAttack : MonoBehaviour
 {
+    private const float MULTIPLY_SCALE = 0.35f;
+
     private SpriteRenderer spriteRenderer;
-    private List<Monster> monsters;
 
     private float maxFade = 0.6f, durationFade = 1f;
     private float coolTime = 3f, curTime = 0;
-
+        
     private void Start()
     {
-        monsters = new List<Monster>(); 
-        spriteRenderer=GetComponent<SpriteRenderer>();
+        spriteRenderer = GetComponent<SpriteRenderer>();
+
+        SubscribeAttackRange();
     }
 
     private void Update()
     {
         curTime += Time.deltaTime;
+    }
+
+    private void SubscribeAttackRange()
+    {
+        GameManager.Instance.playerScript.Stats["AttackRange"].OnChangesCurrentValueAsObservable.Subscribe(newValue => 
+        {
+            float newScale = newValue * MULTIPLY_SCALE;
+            transform.localScale = new Vector2(newScale, newScale); 
+        }).AddTo(gameObject);
     }
 
     public void PlayCounterAttack()
@@ -33,43 +45,16 @@ public class CounterAttack : MonoBehaviour
         curTime -= coolTime;
         StartCoroutine(alphaAnimation());
 
-        List<Monster> temp = new(monsters);
-        temp
-            .ForEach(m => 
-            { 
-                m.ApplyDamage((int)GameManager.Instance.playerScript.Stats["CounterAttack"].CurrentValue);
+        GameManager.Instance.world.Actors
+            .Where(actor => actor.ActorType == ActorType.Monster
+                    && Vector2.Distance(actor.Go.transform.position, GameManager.Instance.playerScript.Go.transform.position) < GameManager.Instance.playerScript.Stats["AttackRange"].CurrentValue)
+            .Select(actor => actor)
+            .ToList()
+            .ForEach(actor =>
+            {
+                Damage damage = new Damage() { Magnitude = -GameManager.Instance.playerScript.Stats["CounterAttack"].CurrentValue };
+                actor.Stats["Hp"].ApplyModifier(damage);
             });
-
-        GameManager.Instance.objectPoolManager.PlayParticle("Prefab/Particle/2", transform.position);
-    }
-
-    public void CounterAttack_Funtion(float damage)
-    {
-        StartCoroutine(alphaAnimation());
-
-        for (int i = 0; i < monsters.Count; i++)
-        {
-            //monsters[i].GetDamage(damage);
-        }
-
-        //GameManager.Instance.objectPoolManager.PlayParticle("Prefab/Particle/2", transform.position);
-    }
-
-
-    private void OnTriggerEnter2D(Collider2D collision)
-    {
-        if (collision.CompareTag("Monster"))
-        {
-            monsters.Add(collision.GetComponent<Monster>());
-        }
-    }
-
-    private void OnTriggerExit2D(Collider2D collision)
-    {
-        if (collision.CompareTag("Monster") && monsters.Contains(collision.GetComponent<Monster>()))
-        {
-            monsters.Remove(collision.GetComponent<Monster>());
-        }
     }
 
     IEnumerator alphaAnimation()
@@ -79,6 +64,6 @@ public class CounterAttack : MonoBehaviour
         spriteRenderer.DOFade(maxFade, durationFade);
         yield return new WaitForSeconds(durationFade);
 
-        spriteRenderer.color = new Color(1, 1, 1, 0);
+        spriteRenderer.color = new Color(1, 1, 1, 1);
     }
 }

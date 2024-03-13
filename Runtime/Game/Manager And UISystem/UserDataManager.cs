@@ -56,6 +56,8 @@ public class UserData : SavedUserData
 
 public class UserDataManager
 {
+    public const int USEOWNSKILL_MAX_COUNT = 15;
+
     public SavedUserData savedUserData;
     public UserData userData = new();
     public bool backendConnected;
@@ -129,8 +131,21 @@ public class UserDataManager
         _userData.CriticalChanceLevel = 1;
         _userData.CriticalMultiplierLevel = 1;
         _userData.CounterAttackLevel = 1;
-        _userData.SkillsInUseList = new();
-        _userData.SkillDict = new();
+        _userData.SkillsInUseList = new() 
+        {
+            1001, 1002, 1003, 1004
+        };
+        int cnt = _userData.SkillsInUseList.Count;
+        for (int i = 0; i < USEOWNSKILL_MAX_COUNT - cnt; i++) 
+            _userData.SkillsInUseList.Add(-1);
+
+        _userData.SkillDict = new() 
+        {
+            { 1001, new() { Count = 1, Level = 1 } },
+            { 1002, new() { Count = 1, Level = 1 } },
+            { 1003, new() { Count = 1, Level = 1 } },
+            { 1004, new() { Count = 1, Level = 1 } },
+        };
     }
 
     private SavedUserData CreateSavedData(UserData _data)
@@ -182,10 +197,36 @@ public class UserDataManager
         _userData.CounterAttackLevel = _savedData.CounterAttackLevel;
 
         if (_savedData.SkillsInUseList.IsNullOrWhiteSpaceEx() == false)
+        {
             _userData.SkillsInUseList = JsonConvert.DeserializeObject<List<int>>(_savedData.SkillsInUseList);
 
+            // 개수가 작다면 채워넣습니다..
+            int cnt = _userData.SkillsInUseList.Count;
+            for (int i = 0; i < USEOWNSKILL_MAX_COUNT - cnt; i++)
+            {
+                _userData.SkillsInUseList.Add(-1);
+            }
+
+            // temp: 임시로 1001~1004를 등록합니다.
+            _userData.SkillsInUseList[0] = 1001;
+            _userData.SkillsInUseList[1] = 1002;
+            _userData.SkillsInUseList[2] = 1003;
+            _userData.SkillsInUseList[3] = 1004;
+        }
+
         if (_savedData.SkillDict.IsNullOrWhiteSpaceEx() == false)
+        {
             _userData.SkillDict = JsonConvert.DeserializeObject<Dictionary<int, SavedSkillData>>(_savedData.SkillDict);
+
+            // temp: 임시로 1001~1004를 지급합니다.
+            for (int id = 1001; id <= 1004 ; id++)
+            {
+                if (!_userData.SkillDict.ContainsKey(id))
+                {
+                    _userData.SkillDict.Add(id, new SavedSkillData() { Count = 1, Level = 1 } );
+                }
+            }
+        }
     }
 
     private Param CreateParamForBackend(SavedUserData _old, SavedUserData _new)

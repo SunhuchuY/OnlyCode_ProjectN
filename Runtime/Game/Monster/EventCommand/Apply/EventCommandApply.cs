@@ -28,6 +28,6 @@ public static class EventCommandApply
             return;
         }
 
-        owner.PassiveEvent += eventcommand.Event;
+        owner.OnPassiveEvent += eventcommand.Event;
     }
 }

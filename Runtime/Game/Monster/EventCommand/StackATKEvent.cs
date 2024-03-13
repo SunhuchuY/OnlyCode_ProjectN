@@ -5,12 +5,14 @@ public class StackATKEvent : IEventCommand<BigInteger>
 {
     private readonly int StackMaxCount;
     public Monster Owner { get; private set; }
-    
+
     // ATK 추가데미지
     public BigInteger Add { get; private set; }
     private bool isOnRemoveEvent = false;
+    private StatModifier modifier;
 
     private int m_stackCurrentCount = 0;
+
     private int stackCurrentCount
     {
         get
@@ -22,7 +24,6 @@ public class StackATKEvent : IEventCommand<BigInteger>
         {
             m_stackCurrentCount = Mathf.Clamp(value, 0, StackMaxCount);
         }
-
     }
 
 
@@ -40,16 +41,18 @@ public class StackATKEvent : IEventCommand<BigInteger>
         // 스택이 다 쌓이면 ATK에 추가데미지를 넣습니다.
         if (stackCurrentCount == StackMaxCount)
         {
-            Owner.attributes.ATK.AddModifier(Add);
+            modifier = new StatModifier() { Magnitude = (float)Add };
+            Owner.Stats["Attack"].ApplyModifier(modifier);
             stackCurrentCount = 0;
             isOnRemoveEvent = true;
+            GameManager.Instance.objectPoolManager.PlayParticle("Prefab/Particle/22", Owner.transform.position);
             return;
         }
 
         // 스택이 다 쌓이고, 다음턴에 ATK에 추가데미지를 제거합니다.
-        if (isOnRemoveEvent) 
+        if (isOnRemoveEvent)
         {
-            Owner.attributes.ATK.RemoveModifier(Add); 
+            Owner.Stats["Attack"].RemoveModifier(modifier);
         }
     }
 }

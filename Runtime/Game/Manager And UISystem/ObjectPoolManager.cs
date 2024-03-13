@@ -22,6 +22,26 @@ public class ObjectPoolManager : MonoBehaviour
         _particle.Play();
     }
 
+    public void PlayParticle(string _address, Vector3 _position, float size)
+    {
+        IObjectPool<ParticleSystem> _pool = null;
+
+        bool _poolExisted = particlesPoolMap.TryGetValue(_address, out _pool);
+        if (_poolExisted == false)
+        {
+            CreateParticleSystemPool(_address, out _pool);
+            particlesPoolMap.Add(_address, _pool);
+        }
+
+        var _particle = _pool.Get();
+        _particle.transform.position = _position;
+        _particle.Play();
+
+        Vector2 originalScale = transform.localScale;
+        Vector2 newScale = originalScale * size;
+        transform.localScale = newScale; 
+    }
+
     private void CreateParticleSystemPool(string _address, out IObjectPool<ParticleSystem> _pool)
     {
         var _prefab = Resources.Load<ParticleSystem>(_address);

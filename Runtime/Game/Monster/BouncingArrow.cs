@@ -37,18 +37,7 @@ public class BouncingArrow : MonoBehaviour
 
     private void OnTriggerStay2D(Collider2D collision)
     {
-        if (collision.CompareTag("Player") && !isShield)
-        {
-            if (collision.GetComponent<Player>() != null)
-                GameManager.Instance.playerScript.ApplyDamage(damage);
-            else if (collision.GetComponent<Friend>() != null)
-                collision.GetComponent<Friend>().GetDamage(damage);
-
-            Instantiate(effectPrefeb, transform.position, Quaternion.identity);
-
-            Destroy(gameObject);
-
-        }
+       
 
     }
 

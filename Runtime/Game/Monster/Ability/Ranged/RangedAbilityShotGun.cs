@@ -22,8 +22,8 @@ public class RangedAbilityShotGun : BaseRangedAbility
             return;
         }
 
-        Vector2 targetPos = Owner.detector.GetCurrentTargetTransform().position;
-        float startAngle = Mathf.Atan2(targetPos.y - Owner.transform.position.y, targetPos.x - Owner.transform.position.x) * Mathf.Rad2Deg - SpreadAngle / 2;
+        Vector2 targetPos = Owner.detector.GetCurrentTargetActor().Go.transform.position;
+        float startAngle = Mathf.Atan2(targetPos.y - FireTf.position.y, targetPos.x - FireTf.position.x) * Mathf.Rad2Deg - SpreadAngle / 2;
 
         for (int i = 0; i < BulletCount; i++)
         {
@@ -35,7 +35,7 @@ public class RangedAbilityShotGun : BaseRangedAbility
             bullet.transform.position = FireTf.transform.position;
             bullet.transform.rotation = rotation;   
 
-            bullet.Initialize((int)Owner.attributes.ATK.Value);
+            bullet.Initialize((int)Owner.Stats["Attack"].CurrentValue);
             bullet.rb.velocity = bullet.transform.right * Speed;
         }
     }

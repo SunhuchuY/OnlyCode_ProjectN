@@ -1,8 +1,9 @@
-using Newtonsoft.Json;
 using System.Numerics;
+using Vector2 = UnityEngine.Vector2;
 
-public class MonsterProfile
+public class MonsterProfile : GameActorData
 {
+    public readonly int Id;
     public readonly string MonsterImageName;
     public readonly string Explanation;
     public readonly int AttackType;
@@ -17,11 +18,16 @@ public class MonsterProfile
     public readonly string UniqueAbilityJsonText;
     public readonly string SpecialAbilityJsonText;
     public readonly string EventJsonText;
+    public readonly string AnimationControllerAddress;
+    public readonly string HitPivot;
+    public readonly string DamagePivot;
 
-    public MonsterProfile(string monsterImageName, string explanation, int attackType, int hp, int atk, 
+    public MonsterProfile(int id, string monsterImageName, string explanation, int attackType, int hp, int atk, 
         float attackSpeed, float speed, float detectionRange, BigInteger getMagicStone, BigInteger getXP, BigInteger getGold, 
-        string uniqueAbilityJsonText, string specialAbilityJsonText, string eventJsonText)
+        string uniqueAbilityJsonText, string specialAbilityJsonText, string eventJsonText, string animationControllerAddress,
+        string hitPivot, string damagePivot)
     {
+        Id = id;
         MonsterImageName = monsterImageName;
         Explanation = explanation;
         AttackType = attackType;
@@ -36,5 +42,8 @@ public class MonsterProfile
         UniqueAbilityJsonText = uniqueAbilityJsonText;
         SpecialAbilityJsonText = specialAbilityJsonText;
         EventJsonText = eventJsonText;
+        AnimationControllerAddress = animationControllerAddress;
+        HitPivot = hitPivot;
+        DamagePivot = damagePivot;
     }
 }

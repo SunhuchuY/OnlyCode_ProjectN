@@ -10,6 +10,11 @@ public class AccountLogin : MonoBehaviour
     {
         accessor.gameObject.SetActive(true);
 
+        accessor.GameQuitConfirmButton.onClick.AddListener(() => 
+        {
+            Application.Quit();
+        });
+
         accessor.GoogleplaygamesLoginButton.onClick.AddListener(() =>
         {
             TheBackend.ToolKit.GoogleLogin.Android.GoogleLogin(GoogleLoginCallback);
@@ -17,6 +22,19 @@ public class AccountLogin : MonoBehaviour
             if (Backend.IsLogin)
             {
                 accessor.GoogleplaygamesLoginButton.gameObject.SetActive(false);
+
+                // 서버 점검여부를 확인합니다.
+                // 0: 온라인, 1: 오프라인, 2: 점검
+                var serverStatusBro = Backend.Utils.GetServerStatus();
+                if (serverStatusBro.IsSuccess())
+                {
+                    int serverStatus = int.Parse(serverStatusBro.GetReturnValuetoJSON()["serverStatus"].ToString());
+                    if (serverStatus != 0)
+                    {
+                        accessor.MessagePopup.gameObject.SetActive(true);
+                        return;
+                    }
+                }
 
                 if (Backend.UserNickName == string.Empty)
                 {
